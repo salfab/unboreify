@@ -1,5 +1,7 @@
+// src/hooks/useSpotifyAuth.ts
 import { useEffect, useState } from 'react';
-import axios from 'axios';
+import SpotifyWebApi from 'spotify-web-api-js';
+import { getCurrentUser } from '../services/spotifyService';
 
 interface SpotifyUser {
   display_name: string;
@@ -10,6 +12,11 @@ const CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
 const REDIRECT_URI = import.meta.env.VITE_SPOTIFY_REDIRECT_URI;
 const AUTH_ENDPOINT = 'https://accounts.spotify.com/authorize';
 const RESPONSE_TYPE = 'token';
+const SCOPES = 'user-read-currently-playing user-read-playback-state';
+
+
+
+export const spotifyApi = new SpotifyWebApi();
 
 export const useSpotifyAuth = () => {
   const [token, setToken] = useState<string | null>(null);
@@ -29,17 +36,15 @@ export const useSpotifyAuth = () => {
     }
 
     setToken(token);
+
+    if (token) {
+      spotifyApi.setAccessToken(token);
+    }
   }, []);
 
   useEffect(() => {
     if (token) {
-      axios.get<SpotifyUser>('https://api.spotify.com/v1/me', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-      .then(response => setUser(response.data))
-      .catch(error => console.error(error));
+      getCurrentUser(token).then(setUser).catch(console.error);
     }
   }, [token]);
 
@@ -49,7 +54,7 @@ export const useSpotifyAuth = () => {
   };
 
   const login = () => {
-    window.location.href = `${AUTH_ENDPOINT}?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=${RESPONSE_TYPE}&scope=user-read-private`;
+    window.location.href = `${AUTH_ENDPOINT}?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=${RESPONSE_TYPE}&scope=${encodeURIComponent(SCOPES)}`;
   };
 
   return { token, user, login, logout };
