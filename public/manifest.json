@@ -1,0 +1,20 @@
+
+{
+  "name": "Unboreify",
+  "short_name": "Unboreify",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fff",
+  "description": "Make your spotify playlists less boring",
+  "icons": [{
+    "src": "icon/lowres.webp",
+    "sizes": "48x48",
+    "type": "image/webp"
+  }, {
+    "src": "icon/lowres",
+    "sizes": "48x48"
+  }, {
+    "src": "icon/hd_hi",
+    "sizes": "128x128"
+  }]
+}
