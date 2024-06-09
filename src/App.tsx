@@ -7,6 +7,7 @@ import QueuePage from './components/QueuePage';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
 import HomePage from './components/HomePage';
+import Footer from './components/Footer';
 
 const App: React.FC = () => {
   const { token, user, login, logout } = useSpotifyAuth();
@@ -108,6 +109,7 @@ const App: React.FC = () => {
           <Route path="/" element={<HomePage />} /> {/* Placeholder for Home or other components */}
         </Routes>
       </Container>
+      <Footer />
     </Router>
   );
 };

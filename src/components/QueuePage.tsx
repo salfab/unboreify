@@ -174,7 +174,7 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
         </Box>
         {alternativePlaylist.map((track) => <TrackCard track={track} key={track.uri} />)}
       </Grid>
-      <Grid item xs={12}>
+      <Grid item xs={12} hidden>
         <Typography variant="h4" gutterBottom>
           User Playlists
         </Typography>
