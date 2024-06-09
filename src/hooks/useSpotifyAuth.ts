@@ -1,6 +1,5 @@
 // src/hooks/useSpotifyAuth.ts
 import { useEffect, useState } from 'react';
-import SpotifyWebApi from 'spotify-web-api-js';
 import { getCurrentUser } from '../services/spotifyService';
 
 interface SpotifyUser {
@@ -15,7 +14,6 @@ const SCOPES = 'user-read-currently-playing user-read-playback-state user-modify
 
 
 
-export const spotifyApi = new SpotifyWebApi();
 
 export const useSpotifyAuth = () => {
   const [token, setToken] = useState<string | null>(null);
@@ -36,9 +34,6 @@ export const useSpotifyAuth = () => {
 
     setToken(token);
 
-    if (token) {
-      spotifyApi.setAccessToken(token);
-    }
   }, []);
 
   useEffect(() => {
