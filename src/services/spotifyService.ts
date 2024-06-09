@@ -3,6 +3,42 @@ import axios from 'axios';
 
 const BASE_URL = 'https://api.spotify.com/v1';
 
+
+export interface PlaylistTrack {
+  added_at: string;
+  added_by: {
+    external_urls: {
+      spotify: string;
+    };
+    href: string;
+    id: string;
+    type: string;
+    uri: string;
+  };
+  is_local: boolean;
+  primary_color: string | null;
+  track: Track;
+  video_thumbnail: {
+    url: string | null;
+  };
+}
+
+
+export interface PlaylistResponse {
+  tracks : { items: { track: Track }[]};
+  name : string;
+  description: string;
+}
+
+export interface PlaylistTracksResponse {
+  href: string;
+  items: PlaylistTrack[];
+  limit: number;
+  next: string | null;
+  offset: number;
+  previous: string | null;
+  total: number;
+}
 export interface Artist {
   name: string;
   id: string;
@@ -111,8 +147,13 @@ export const getUserPlaylists = async (token: string) => {
   return data.items;
 };
 
-export const getPlaylistTracks = async (token: string, playlistId: string) => {
-  const data = await getRequest<{ items: { track: Track}[] }>(`${BASE_URL}/playlists/${playlistId}/tracks`, token);
+export const getPlaylist = async (token: string, playlistId: string): Promise<PlaylistResponse> => {
+  const data = await getRequest<PlaylistResponse>(`${BASE_URL}/playlists/${playlistId}`, token);
+  return data;
+};
+
+export const getPlaylistTracks = async (token: string, playlistId: string): Promise<PlaylistTracksResponse> => {
+  const data = await getRequest<PlaylistTracksResponse>(`${BASE_URL}/playlists/${playlistId}/tracks`, token);
   return data;
 };
 
