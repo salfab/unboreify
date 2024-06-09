@@ -4,6 +4,7 @@ import { getCurrentUser } from '../services/spotifyService';
 
 interface SpotifyUser {
   display_name: string;
+  images: { url: string }[];
   // Add other user properties if needed
 }
 const CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
