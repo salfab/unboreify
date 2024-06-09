@@ -110,8 +110,8 @@ export const getUserPlaylists = async (token: string) => {
 };
 
 export const getPlaylistTracks = async (token: string, playlistId: string) => {
-  const data = await getRequest<{ items: any[] }>(`${BASE_URL}/playlists/${playlistId}/tracks`, token);
-  return data.items;
+  const data = await getRequest<{ items: { track: Track}[] }>(`${BASE_URL}/playlists/${playlistId}/tracks`, token);
+  return data;
 };
 
 export const addToQueue = async (token: string, uri: string, deviceId: string) => {

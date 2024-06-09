@@ -39,13 +39,13 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
   }, [token]);
 
   const fetchPlaylistTracks = useCallback(
-    async (playlistId: string) => {
-      if (!token) return;
+    async (playlistId: string) : Promise<Track[]> => {
+      if (!token) throw new Error('No token provided');
 
       try {
-        const tracks = await getPlaylistTracks(token, playlistId);
-        const trackUris = tracks.map((track: any) => track.track.uri);
-        return trackUris;
+        const items = (await getPlaylistTracks(token, playlistId)).items;
+        const tracks = items.map((item: {track: Track}) => item.track);
+        return tracks;
       } catch (error) {
         console.error(error);
         return [];
@@ -115,7 +115,7 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
         <Typography variant="h4" gutterBottom>
           Currently Playing
         </Typography>
-        {queueData?.currently_playing.track && <TrackCard track={queueData.currently_playing.track} />}
+        {queueData?.currently_playing?.track ? <TrackCard track={queueData.currently_playing.track}  /> : <>Player stopped</>}
       </Grid>
       <Grid item xs={12} sm={6}>
         <Typography variant="h4" gutterBottom>
