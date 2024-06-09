@@ -1,8 +1,9 @@
-// src/components/QueuePage.tsx
 import React, { useEffect, useState, useCallback } from 'react';
-import { Button, Grid, Typography, Card, CardContent, CardMedia, Box } from '@mui/material';
-import { getQueue, getDevices, addToQueue, getUserPlaylists, getPlaylistTracks } from '../services/spotifyService';
-import { SpotifyQueue } from '../services/spotifyService';
+import { Button, Grid, Typography, Box, LinearProgress, Tooltip } from '@mui/material';
+import { AutoAwesome as AutoAwesomeIcon } from '@mui/icons-material';
+import { getQueue, getPlaybackState, startPlayback, getUserPlaylists, getPlaylistTracks, SpotifyQueue, Track } from '../services/spotifyService';
+import { buildAlternativePlaylist, ProgressCallback } from '../services/playlistService';
+import TrackCard from './TrackCard';
 
 interface QueuePageProps {
   token: string | null;
@@ -10,8 +11,10 @@ interface QueuePageProps {
 
 const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
   const [queueData, setQueueData] = useState<SpotifyQueue | null>(null);
-  const [alternativePlaylist, setAlternativePlaylist] = useState<string[]>([]);
+  const [alternativePlaylist, setAlternativePlaylist] = useState<Track[]>([]);
   const [playlists, setPlaylists] = useState<any[]>([]);
+  const [progress, setProgress] = useState<{ phase: string; percentage: number }>({ phase: '', percentage: 0 });
+  const [lengthMultiplier, setLengthMultiplier] = useState<number>(1);
 
   const fetchQueue = useCallback(async () => {
     if (!token) return;
@@ -63,12 +66,11 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
     if (!token) return;
 
     try {
-      const devices = await getDevices(token);
-      const deviceId = devices[0]?.id;
+      const playbackState = await getPlaybackState(token);
+      const deviceId = playbackState.device.id;
 
-      for (const trackUri of alternativePlaylist) {
-        await addToQueue(token, trackUri, deviceId);
-      }
+      const uris = alternativePlaylist.map(track => track.uri);
+      await startPlayback(token, uris, deviceId);
 
       fetchQueue();
     } catch (error) {
@@ -76,60 +78,72 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
     }
   }, [alternativePlaylist, token, fetchQueue]);
 
+  const handleEnhanceClick = () => {
+    setLengthMultiplier(prev => Math.min(prev + 1, 5));
+  };
+
+  const updateProgress: ProgressCallback = useCallback((progress) => {
+    setProgress(progress);
+  }, []);
+
   useEffect(() => {
     fetchQueue();
     fetchUserPlaylists();
   }, [fetchQueue, fetchUserPlaylists]);
 
-  const renderTrackCard = (track: any) => (
-    <Card key={track.uri} sx={{ display: 'flex', marginBottom: 2 }}>
-      <CardMedia
-        component="img"
-        sx={{ width: 151 }}
-        image={track.album.images[0].url}
-        alt={track.album.name}
-      />
-      <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-        <CardContent sx={{ flex: '1 0 auto' }}>
-          <Typography component="div" variant="h6">
-            {track.name}
-          </Typography>
-          <Typography variant="subtitle1" color="text.secondary" component="div">
-            {track.artists.map((artist: any) => artist.name).join(', ')}
-          </Typography>
-          <Typography variant="subtitle2" color="text.secondary" component="div">
-            {track.album.name}
-          </Typography>
-        </CardContent>
-      </Box>
-    </Card>
-  );
+  useEffect(() => {
+    if (queueData) {
+      (async () => {
+        const alternativePlaylist = await buildAlternativePlaylist(token!, queueData, lengthMultiplier, updateProgress);
+        setAlternativePlaylist(alternativePlaylist);
+      })();
+    }
+  }, [queueData, token, lengthMultiplier, updateProgress]);
 
   return (
     <Grid container spacing={3}>
       <Grid item xs={12}>
         <Typography variant="h4" gutterBottom>
+          Progress
+        </Typography>
+        <Box>
+          <Typography variant="body1">{progress.phase}</Typography>
+          <LinearProgress variant="determinate" value={progress.percentage} />
+        </Box>
+      </Grid>
+      <Grid item xs={12}>
+        <Typography variant="h4" gutterBottom>
           Currently Playing
         </Typography>
-        {queueData?.currently_playing.track && renderTrackCard(queueData.currently_playing.track)}
+        {queueData?.currently_playing.track && <TrackCard track={queueData.currently_playing.track} />}
       </Grid>
       <Grid item xs={12} sm={6}>
         <Typography variant="h4" gutterBottom>
           Queue
         </Typography>
-        {queueData?.queue.map((track) => renderTrackCard(track))}
+        {queueData?.queue.map((track) => <TrackCard track={track} key={track.uri} />)}
       </Grid>
       <Grid item xs={12} sm={6}>
-        <Typography variant="h4" gutterBottom>
-          Alternative Playlist
-        </Typography>
-        <Box>
-          {alternativePlaylist.map((uri, index) => (
-            <Typography key={index}>{uri}</Typography>
-          ))}
+        <Box display="flex" alignItems="center" justifyContent="space-between">
+          <Typography variant="h4" gutterBottom>
+            Alternative Playlist {lengthMultiplier > 1 && (<><AutoAwesomeIcon /> x{lengthMultiplier}</>)}
+          </Typography>
+          <Tooltip title="Enhance">
+            <span>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleEnhanceClick}
+                startIcon={<AutoAwesomeIcon />}
+                sx={{ marginLeft: 2 }}
+                disabled={lengthMultiplier >= 5}
+              />
+            </span>
+          </Tooltip>
         </Box>
+        {alternativePlaylist.map((track) => <TrackCard track={track} key={track.uri} />)}
         <Button variant="contained" color="primary" onClick={handleButtonClick} sx={{ marginTop: 2 }}>
-          Replace Queue with Alternative Playlist
+          Play Alternative Playlist
         </Button>
       </Grid>
       <Grid item xs={12}>
