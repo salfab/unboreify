@@ -1,15 +1,21 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Button, Grid, Typography, Box, LinearProgress, Tooltip } from '@mui/material';
+import { Button, Grid, Typography, Box, LinearProgress, Tooltip, IconButton, Collapse } from '@mui/material';
 import { AutoAwesome as AutoAwesomeIcon } from '@mui/icons-material';
+import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import { getQueue, getPlaybackState, startPlayback, getUserPlaylists, getPlaylistTracks, SpotifyQueue, Track, getTrackDetails } from '../services/spotifyService';
 import { buildAlternativePlaylist, ProgressCallback } from '../services/playlistService';
 import TrackCard from './TrackCard';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import { useTheme } from '@mui/material/styles';
 
 interface QueuePageProps {
   token: string | null;
 }
 
 const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   const [queueData, setQueueData] = useState<SpotifyQueue | null>(null);
   const [alternativePlaylist, setAlternativePlaylist] = useState<Track[]>([]);
   const [playlists, setPlaylists] = useState<any[]>([]);
@@ -17,6 +23,7 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
   const [lengthMultiplier, setLengthMultiplier] = useState<number>(1);
   const [isBuilding, setIsBuilding] = useState<boolean>(false);
   const [isComplete, setIsComplete] = useState<boolean>(false);
+  const [queueOpen, setQueueOpen] = useState<boolean>(!isMobile);
 
   const fetchQueue = useCallback(async () => {
     if (!token) return;
@@ -118,6 +125,10 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
     }
   }, [queueData, token, lengthMultiplier, updateProgress, isComplete]);
 
+  const toggleQueue = () => {
+    setQueueOpen(!queueOpen);
+  };
+
   return (
     <Grid container spacing={3}>
       {isBuilding && (
@@ -137,9 +148,24 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
             You have been unboreified!
           </Typography>
           <Typography variant="body1">Your alternative playlist is ready with {alternativePlaylist.length} tracks.</Typography>
-          <Button variant="contained" color="primary" onClick={handleButtonClick} sx={{ marginTop: 2 }}>
-            Play on Spotify
-          </Button>
+          <Box display="flex" alignItems="center" justifyContent="center" mt={2}>
+            <Button variant="contained" color="primary" onClick={handleButtonClick} sx={{ marginRight: 2 }}>
+              Play on Spotify
+            </Button>
+            <Tooltip title="Enhance">
+              <span>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleEnhanceClick}
+                  startIcon={<AutoAwesomeIcon />}
+                  disabled={isBuilding || lengthMultiplier >= 5}
+                >
+                  Enhance
+                </Button>
+              </span>
+            </Tooltip>
+          </Box>
         </Grid>
       )}
       <Grid item xs={12}>
@@ -151,30 +177,23 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
       <Grid item xs={12} sm={6}>
         <Typography variant="h4" gutterBottom>
           Queue
+          {isMobile && (
+            <IconButton onClick={toggleQueue} size="small">
+              {queueOpen ? <ExpandLess /> : <ExpandMore />}
+            </IconButton>
+          )}
         </Typography>
-        {queueData?.queue.map((track) => <TrackCard track={track} key={track.uri} />)}
+        <Collapse in={queueOpen || !isMobile} timeout="auto" unmountOnExit>
+          {queueData?.queue.map((track) => <TrackCard track={track} key={track.uri} />)}
+        </Collapse>
       </Grid>
       <Grid item xs={12} sm={6}>
-        <Box display="flex" alignItems="center" justifyContent="space-between">
-          <Typography variant="h4" gutterBottom>
-            Alternative Playlist {lengthMultiplier > 1 && (<><AutoAwesomeIcon /> x{lengthMultiplier}</>)}
-          </Typography>
-          <Tooltip title="Enhance">
-            <span>
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={handleEnhanceClick}
-                startIcon={<AutoAwesomeIcon />}
-                sx={{ marginLeft: 2 }}
-                disabled={lengthMultiplier >= 5}
-              />
-            </span>
-          </Tooltip>
-        </Box>
+        <Typography variant="h4" gutterBottom>
+          Alternative Playlist {lengthMultiplier > 1 && (<><AutoAwesomeIcon /> x{lengthMultiplier}</>)}
+        </Typography>
         {alternativePlaylist.map((track) => <TrackCard track={track} key={track.uri} />)}
       </Grid>
-      <Grid item xs={12} hidden>
+      <Grid item xs={12}>
         <Typography variant="h4" gutterBottom>
           User Playlists
         </Typography>
