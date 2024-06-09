@@ -36,7 +36,7 @@ const axiosInstance = axios.create({
  */
 export const getSuggestions = async (payload: SuggestionRequest): Promise<SuggestionResponse> => {
   const response = await axiosInstance.post<SuggestionResponse>(
-    `/deejai-playlist`,
+    `/playlist`,
     payload,
     {
       headers: {
@@ -57,7 +57,7 @@ export const getSuggestions = async (payload: SuggestionRequest): Promise<Sugges
  */
 export const searchTrack = async (searchTerm: string, maxItems: number = 25): Promise<FoundTrack[]> => {
   const response = await axiosInstance.get<FoundTrack[]>(
-    `/deejai-search`, // Use the Netlify function
+    `/search`, // Use the Netlify function
     {
       params: {
         string: searchTerm,
