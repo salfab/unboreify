@@ -1,4 +1,4 @@
-import { getTrackDetails, Track, SpotifyQueue, getRecentlyPlayedTracks } from './spotifyService';
+import { getTrackDetails, Track, getRecentlyPlayedTracks } from './spotifyService';
 import { getSuggestions, searchTrack, SuggestionRequest } from './deejaiService';
 
 const BATCH_SIZE = 40 ;
@@ -26,19 +26,19 @@ const searchForTrackId = async (track: Track): Promise<string | null> => {
  */
 export const buildAlternativePlaylist = async (
   token: string,
-  queueData: SpotifyQueue,
+  tracks: Track[],
   lengthMultiplier = 1,
   progressCallback: ProgressCallback
 ): Promise<Track[]> => {
   progressCallback({ phase: 'Fetching recently played tracks', percentage: 10 });
   const recentlyPlayed = await getRecentlyPlayedTracks(token);
   const recentlyPlayedUris = new Set(recentlyPlayed.items.map(item => item.track.uri));
-  const existingUris = new Set(queueData.queue.map(track => track.uri));
+  const existingUris = new Set(tracks.map(track => track.uri));
 
   const validTrackIds: string[] = [];
-  for (let i = 0; i < queueData.queue.length; i++) {
-    const track = queueData.queue[i];
-    progressCallback({ phase: `Searching for track ID (${i + 1}/${queueData.queue.length})`, percentage: 20 + (i / queueData.queue.length) * 30 });
+  for (let i = 0; i < tracks.length; i++) {
+    const track = tracks[i];
+    progressCallback({ phase: `Searching for track ID (${i + 1}/${tracks.length})`, percentage: 20 + (i / tracks.length) * 30 });
     try {
       const validTrackId = await searchForTrackId(track);
       if (validTrackId) {

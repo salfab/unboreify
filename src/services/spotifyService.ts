@@ -22,6 +22,7 @@ export interface Track {
 }
 
 export interface CurrentlyPlaying {
+  uri: string;
   track: Track;
 }
 

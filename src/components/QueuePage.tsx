@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Button, Grid, Typography, Box, LinearProgress, Tooltip } from '@mui/material';
 import { AutoAwesome as AutoAwesomeIcon } from '@mui/icons-material';
-import { getQueue, getPlaybackState, startPlayback, getUserPlaylists, getPlaylistTracks, SpotifyQueue, Track } from '../services/spotifyService';
+import { getQueue, getPlaybackState, startPlayback, getUserPlaylists, getPlaylistTracks, SpotifyQueue, Track, getTrackDetails } from '../services/spotifyService';
 import { buildAlternativePlaylist, ProgressCallback } from '../services/playlistService';
 import TrackCard from './TrackCard';
 
@@ -21,7 +21,14 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
 
     try {
       const queue = await getQueue(token);
-      setQueueData(queue);
+      if (queue.currently_playing && !queue.currently_playing.track) {
+        const currentTrack = await getTrackDetails(queue.currently_playing.id, token);
+        queue.currently_playing.track = currentTrack;
+        setQueueData(queue);
+      }
+      else {
+        setQueueData(queue);
+      }
     } catch (error) {
       console.error(error);
     }
@@ -39,12 +46,12 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
   }, [token]);
 
   const fetchPlaylistTracks = useCallback(
-    async (playlistId: string) : Promise<Track[]> => {
+    async (playlistId: string): Promise<Track[]> => {
       if (!token) throw new Error('No token provided');
 
       try {
         const items = (await getPlaylistTracks(token, playlistId)).items;
-        const tracks = items.map((item: {track: Track}) => item.track);
+        const tracks = items.map((item: { track: Track }) => item.track);
         return tracks;
       } catch (error) {
         console.error(error);
@@ -94,7 +101,10 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
   useEffect(() => {
     if (queueData) {
       (async () => {
-        const alternativePlaylist = await buildAlternativePlaylist(token!, queueData, lengthMultiplier, updateProgress);
+        const alternativePlaylist = await buildAlternativePlaylist(token!,
+          [queueData.currently_playing.track, ...queueData.queue].filter(o => !!o),
+          lengthMultiplier,
+          updateProgress);
         setAlternativePlaylist(alternativePlaylist);
       })();
     }
@@ -115,7 +125,7 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
         <Typography variant="h4" gutterBottom>
           Currently Playing
         </Typography>
-        {queueData?.currently_playing?.track ? <TrackCard track={queueData.currently_playing.track}  /> : <>Player stopped</>}
+        {queueData?.currently_playing?.track ? <TrackCard track={queueData.currently_playing.track} /> : <>Player stopped</>}
       </Grid>
       <Grid item xs={12} sm={6}>
         <Typography variant="h4" gutterBottom>
