@@ -1,8 +1,8 @@
 import { getTrackDetails, Track, getRecentlyPlayedTracks } from './spotifyService';
 import { getSuggestions, searchTrack, SuggestionRequest } from './deejaiService';
+import { loadValidatedTrackIds, addValidatedTrackId } from './localStorageService';
 
 const BATCH_SIZE = 40 ;
-const LOCAL_STORAGE_KEY = 'validatedTrackIds';
 
 export type ProgressCallback = (progress: { phase: string; percentage: number }) => void;
 
@@ -31,7 +31,7 @@ export const buildAlternativePlaylist = async (
     lengthMultiplier = 1,
     progressCallback: ProgressCallback
   ): Promise<Track[]> => {
-    const validatedTrackIds = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY) || '{}');
+    const validatedTrackIds = loadValidatedTrackIds();
   
     progressCallback({ phase: 'Fetching recently played tracks', percentage: 10 });
     const recentlyPlayed = await getRecentlyPlayedTracks(token);
@@ -42,7 +42,7 @@ export const buildAlternativePlaylist = async (
     for (let i = 0; i < tracks.length; i++) {
       const track = tracks[i];
       progressCallback({ phase: `Searching for track ID (${i + 1}/${tracks.length})`, percentage: 20 + (i / tracks.length) * 30 });
-      const cachedTrackId = validatedTrackIds[track.uri];
+      const cachedTrackId = validatedTrackIds.get(track.uri);
   
       if (cachedTrackId) {
         validTrackIds.push(cachedTrackId);
@@ -51,15 +51,13 @@ export const buildAlternativePlaylist = async (
           const validTrackId = await searchForTrackId(track);
           if (validTrackId) {
             validTrackIds.push(validTrackId);
-            validatedTrackIds[track.uri] = validTrackId;
+            addValidatedTrackId(track.uri, validTrackId);
           }
         } catch (error) {
           console.error('Error searching for track ID:', error);
         }
       }
     }
-  
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(validatedTrackIds));
   
     validTrackIds.forEach((trackId) => {
       existingUris.add(`spotify:track:${trackId}`);
