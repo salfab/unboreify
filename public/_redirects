@@ -1,2 +1,2 @@
-/api/*    /.netlify/functions/:splat    200
-/*        /index.html                  200
+/api/*    https://deej-ai.online/api/v1/:splat 200
+/*        /index.html                  200    
