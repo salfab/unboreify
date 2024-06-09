@@ -15,6 +15,8 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
   const [playlists, setPlaylists] = useState<any[]>([]);
   const [progress, setProgress] = useState<{ phase: string; percentage: number }>({ phase: '', percentage: 0 });
   const [lengthMultiplier, setLengthMultiplier] = useState<number>(1);
+  const [isBuilding, setIsBuilding] = useState<boolean>(false);
+  const [isComplete, setIsComplete] = useState<boolean>(false);
 
   const fetchQueue = useCallback(async () => {
     if (!token) return;
@@ -25,8 +27,7 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
         const currentTrack = await getTrackDetails(queue.currently_playing.id, token);
         queue.currently_playing.track = currentTrack;
         setQueueData(queue);
-      }
-      else {
+      } else {
         setQueueData(queue);
       }
     } catch (error) {
@@ -87,6 +88,8 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
 
   const handleEnhanceClick = () => {
     setLengthMultiplier(prev => Math.min(prev + 1, 5));
+    setIsComplete(false);
+    setIsBuilding(true);
   };
 
   const updateProgress: ProgressCallback = useCallback((progress) => {
@@ -99,28 +102,46 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
   }, [fetchQueue, fetchUserPlaylists]);
 
   useEffect(() => {
-    if (queueData) {
+    if (queueData && !isComplete) {
+      setIsBuilding(true);
       (async () => {
-        const alternativePlaylist = await buildAlternativePlaylist(token!,
+        const alternativePlaylist = await buildAlternativePlaylist(
+          token!,
           [queueData.currently_playing.track, ...queueData.queue].filter(o => !!o),
           lengthMultiplier,
-          updateProgress);
+          updateProgress
+        );
         setAlternativePlaylist(alternativePlaylist);
+        setIsBuilding(false);
+        setIsComplete(true);
       })();
     }
-  }, [queueData, token, lengthMultiplier, updateProgress]);
+  }, [queueData, token, lengthMultiplier, updateProgress, isComplete]);
 
   return (
     <Grid container spacing={3}>
-      <Grid item xs={12}>
-        <Typography variant="h4" gutterBottom>
-          Progress
-        </Typography>
-        <Box>
-          <Typography variant="body1">{progress.phase}</Typography>
-          <LinearProgress variant="determinate" value={progress.percentage} />
-        </Box>
-      </Grid>
+      {isBuilding && (
+        <Grid item xs={12}>
+          <Typography variant="h4" gutterBottom>
+            Progress
+          </Typography>
+          <Box>
+            <Typography variant="body1">{progress.phase}</Typography>
+            <LinearProgress variant="determinate" value={progress.percentage} />
+          </Box>
+        </Grid>
+      )}
+      {!isBuilding && isComplete && (
+        <Grid item xs={12}>
+          <Typography variant="h4" gutterBottom>
+            You have been unboreified!
+          </Typography>
+          <Typography variant="body1">Your alternative playlist is ready with {alternativePlaylist.length} tracks.</Typography>
+          <Button variant="contained" color="primary" onClick={handleButtonClick} sx={{ marginTop: 2 }}>
+            Play on Spotify
+          </Button>
+        </Grid>
+      )}
       <Grid item xs={12}>
         <Typography variant="h4" gutterBottom>
           Currently Playing
@@ -152,9 +173,6 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
           </Tooltip>
         </Box>
         {alternativePlaylist.map((track) => <TrackCard track={track} key={track.uri} />)}
-        <Button variant="contained" color="primary" onClick={handleButtonClick} sx={{ marginTop: 2 }}>
-          Play Alternative Playlist
-        </Button>
       </Grid>
       <Grid item xs={12}>
         <Typography variant="h4" gutterBottom>
