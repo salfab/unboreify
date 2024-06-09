@@ -11,12 +11,18 @@ interface ValidatedTrackEntry {
  * @returns A Map of validated track IDs with timestamps.
  */
 export const loadValidatedTrackIds = (): Map<string, ValidatedTrackEntry> => {
-  const data = JSON.parse(localStorage.getItem(localStorageKey) || '{}');
-  const map = new Map<string, ValidatedTrackEntry>();
-  Object.entries(data).forEach(([key, value]) => {
-    map.set(key, value as ValidatedTrackEntry);
-  });
-  return map;
+  try {
+    const data = JSON.parse(localStorage.getItem(localStorageKey) || '{}');
+    const map = new Map<string, ValidatedTrackEntry>();
+    Object.entries(data).forEach(([key, value]) => {
+      map.set(key, value as ValidatedTrackEntry);
+    });
+    return map;
+  } catch (error) {
+    console.error('Error loading from local storage, clearing storage:', error);
+    localStorage.removeItem(localStorageKey);
+    return new Map<string, ValidatedTrackEntry>();
+  }
 };
 
 /**
@@ -24,8 +30,12 @@ export const loadValidatedTrackIds = (): Map<string, ValidatedTrackEntry> => {
  * @param validatedTrackIds - A Map of validated track IDs with timestamps.
  */
 export const saveValidatedTrackIds = (validatedTrackIds: Map<string, ValidatedTrackEntry>) => {
-  const data = Object.fromEntries(validatedTrackIds);
-  localStorage.setItem(localStorageKey, JSON.stringify(data));
+  try {
+    const data = Object.fromEntries(validatedTrackIds);
+    localStorage.setItem(localStorageKey, JSON.stringify(data));
+  } catch (error) {
+    console.error('Error saving to local storage:', error);
+  }
 };
 
 /**
