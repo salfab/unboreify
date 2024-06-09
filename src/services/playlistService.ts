@@ -42,10 +42,12 @@ export const buildAlternativePlaylist = async (
     for (let i = 0; i < tracks.length; i++) {
       const track = tracks[i];
       progressCallback({ phase: `Searching for track ID (${i + 1}/${tracks.length})`, percentage: 20 + (i / tracks.length) * 30 });
-      const cachedTrackId = validatedTrackIds.get(track.uri);
+      const cachedEntry = validatedTrackIds.get(track.uri);
   
-      if (cachedTrackId) {
-        validTrackIds.push(cachedTrackId);
+      if (cachedEntry) {
+        validTrackIds.push(cachedEntry.id);
+        // Update the timestamp
+        addValidatedTrackId(track.uri, cachedEntry.id);
       } else {
         try {
           const validTrackId = await searchForTrackId(track);
