@@ -29,7 +29,8 @@ export const buildAlternativePlaylist = async (
   token: string,
   tracks: Track[],
   lengthMultiplier = 1,
-  progressCallback: ProgressCallback
+  progressCallback: ProgressCallback,
+  mode: 'extend' | 'alternative' = 'alternative',
 ): Promise<Track[]> => {
   const validatedTrackIds = loadValidatedTrackIds();
 
@@ -93,12 +94,12 @@ export const buildAlternativePlaylist = async (
       }
 
       const trackIdsToFetch = suggestionResponse.track_ids.filter(id => !cachedTracks[id]);
-      let suggestionTracks: Track[] = [];
+      let fetchedTracks: Track[] = [];
 
       if (trackIdsToFetch.length > 0) {
+        console.log('Fetching tracks not in cache:', trackIdsToFetch.length);
         // Fetch tracks not in the cache
-        const fetchedTracks = await getTracks(trackIdsToFetch, token);
-        suggestionTracks = fetchedTracks;
+        fetchedTracks = await getTracks(trackIdsToFetch, token);
 
         // Cache the fetched tracks
         fetchedTracks.forEach(track => {
@@ -114,14 +115,22 @@ export const buildAlternativePlaylist = async (
         }
       } else {
         // Use cached tracks
-        suggestionTracks = suggestionResponse.track_ids.map(id => cachedTracks[id]);
+        console.log('Using only cached tracks');
+        fetchedTracks = suggestionResponse.track_ids.map(id => cachedTracks[id]);
       }
 
-      const filteredTracks = suggestionTracks.filter(
-        (track: Track) => !recentlyPlayedUris.has(track.uri) && !existingUris.has(track.uri)
-      );
 
+
+        // rebuild ordered tracklist from suggestionResponse cached and fetched tracks
+        const orderedTracklist = suggestionResponse.track_ids.map(id => cachedTracks[id] || fetchedTracks.find(track => track.id === id)).filter(Boolean);
+        const filteredTracks = orderedTracklist.filter(
+            (track: Track) => !recentlyPlayedUris.has(track.uri) && (mode === 'extend' || !existingUris.has(track.uri)));
       alternativePlaylist.push(...filteredTracks);
+
+
+      console.log('Filtered tracks:', filteredTracks);
+      console.log('Suggestion tracks:', fetchedTracks);
+
     } catch (error) {
       console.error('Error fetching suggestions:', error);
       throw error;
