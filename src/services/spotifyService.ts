@@ -208,8 +208,8 @@ export const getPlaybackState = async (token: string): Promise<PlaybackState> =>
  * @returns A promise that resolves to a Track object.
  */
 export const getTracks = async (trackIds: string[], token: string): Promise<Track[]> => {
-  const data = await getRequest<Track[]>(`${BASE_URL}/tracks?ids=${trackIds.join(',')}`, token);
-  return data;
+  const data = await getRequest<{tracks: Track[]}>(`${BASE_URL}/tracks?ids=${trackIds.join(',')}`, token);
+  return data.tracks;
 };
 
 /**
