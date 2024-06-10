@@ -54,9 +54,12 @@ export const buildAlternativePlaylist = async (
           if (validTrackId) {
             validTrackIds.push(validTrackId);
             addValidatedTrackId(track.uri, validTrackId);
+          } else {
+            console.warn(`No valid track ID found for track: ${track.name} by ${track.artists[0].name}`);
           }
         } catch (error) {
           console.error('Error searching for track ID:', error);
+          return Promise.reject(error);
         }
       }
     }
@@ -89,6 +92,7 @@ export const buildAlternativePlaylist = async (
         alternativePlaylist.push(...filteredTracks);
       } catch (error) {
         console.error('Error fetching suggestions:', error);
+        throw error;
       }
     }
   
