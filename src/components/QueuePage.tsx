@@ -23,7 +23,7 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
   const [playlists, setPlaylists] = useState<any[]>([]);
   const [progress, setProgress] = useState<{ phase: string; percentage: number }>({ phase: '', percentage: 0 });
   const [lengthMultiplier, setLengthMultiplier] = useState<number>(1);
-  const [isBuilding, setIsBuilding] = useState<boolean>(false);
+  const isBuildingRef = React.useRef(false);
   const [isComplete, setIsComplete] = useState<boolean>(false);
   const [queueOpen, setQueueOpen] = useState<boolean>(!isMobile);
   const [selectedPlaylist, setSelectedPlaylist] = useState<PlaylistResponse | null>(null);
@@ -60,7 +60,6 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
 
       try {
         const playlist = await getPlaylist(token, playlistId);
-        setIsComplete(false);
         setSelectedPlaylist(playlist);
         setShowQueue(false); // Show the playlist instead of the queue
       } catch (error) {
@@ -89,8 +88,6 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
 
   const handleEnhanceClick = () => {
     setLengthMultiplier(prev => Math.min(prev + 1, 5));
-    setIsComplete(false);
-    setIsBuilding(true);
   };
 
   const updateProgress: ProgressCallback = useCallback((progress) => {
@@ -108,9 +105,6 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
   }, [fetchQueue, fetchUserPlaylists]);
 
   useEffect(() => {
-    if (isComplete) return;
-
-
     let tracks: any[] = [];
 
     if (showQueue && queueData) {
@@ -120,17 +114,24 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
     }
 
     if (tracks.length > 0) {
-      setIsBuilding(true);
+      console.log('Building alternative playlist');
+      if (isBuildingRef.current) return;
+      isBuildingRef.current = true;
+      setIsComplete(false);
       buildAlternativePlaylist(token!, tracks, lengthMultiplier, updateProgress)
         .then((alternativePlaylist) => {
           setAlternativePlaylist(alternativePlaylist);
           setIsComplete(true);
+          console.log('Building complete');
         },
           showBoundary)
-        .finally(() => setIsBuilding(false))
+        .finally(() => {
+          console.log('not building anymore');
+          isBuildingRef.current = false;
+        })
     }
 
-  }, [queueData, token, lengthMultiplier, updateProgress, isComplete, showQueue, selectedPlaylist, showBoundary]);
+  }, [lengthMultiplier, queueData, selectedPlaylist, showBoundary, showQueue, token, updateProgress]);
   const toggleQueue = () => {
     setQueueOpen(!queueOpen);
   };
@@ -142,7 +143,7 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
 
   return (
     <Grid container spacing={3}>
-      {isBuilding && (
+      {!isComplete && (
         <Grid item xs={12}>
           <Typography variant="h4" gutterBottom>
             Progress
@@ -153,7 +154,7 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
           </Box>
         </Grid>
       )}
-      {!isBuilding && isComplete && (
+      {isComplete && (
         <Grid item xs={12}>
           <Typography variant="h4" gutterBottom>
             You have been unboreified!
@@ -170,7 +171,7 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
                   color="primary"
                   onClick={handleEnhanceClick}
                   startIcon={<AutoAwesomeIcon />}
-                  disabled={isBuilding || lengthMultiplier >= 5}
+                  disabled={!isComplete || lengthMultiplier >= 5}
                 >
                   Enhance
                 </Button>
@@ -203,10 +204,7 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
         </>
       ) : (
         <Grid item xs={12} sm={6}>
-          <Button variant="contained" onClick={handleBackToQueue} sx={{ marginBottom: 2 }}>
-            Back to Queue
-          </Button>
-          {selectedPlaylist && <PlaylistPresenter items={selectedPlaylist.tracks.items.map(o => o.track)} name={selectedPlaylist.name} description={selectedPlaylist.description} />}
+          {selectedPlaylist && <PlaylistPresenter onBackToQueue={handleBackToQueue} items={selectedPlaylist.tracks.items.map(o => o.track)} name={selectedPlaylist.name} description={selectedPlaylist.description} />}
         </Grid>
       )}
       <Grid item xs={12} sm={6}>
