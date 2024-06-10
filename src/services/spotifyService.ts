@@ -199,6 +199,7 @@ export const getPlaybackState = async (token: string): Promise<PlaybackState> =>
   return await getRequest<PlaybackState>(`${BASE_URL}/me/player`, token);
 };
 
+const maxIdsPerCallGetTracks = 50;
 
 
 /**
@@ -208,9 +209,29 @@ export const getPlaybackState = async (token: string): Promise<PlaybackState> =>
  * @returns A promise that resolves to a Track object.
  */
 export const getTracks = async (trackIds: string[], token: string): Promise<Track[]> => {
+  if (trackIds.length > maxIdsPerCallGetTracks) {
+    return fetchTracksInBatches(trackIds, token);
+  }
   const data = await getRequest<{tracks: Track[]}>(`${BASE_URL}/tracks?ids=${trackIds.join(',')}`, token);
   return data.tracks;
 };
+
+const  fetchTracksInBatches = async(trackIds: string[], token: string) : Promise<Track[]> =>{
+  const trackChunks = [];
+
+  for (let i = 0; i < trackIds.length; i += maxIdsPerCallGetTracks) {
+    trackChunks.push(trackIds.slice(i, i + maxIdsPerCallGetTracks));
+  }
+
+  const allTracks = [];
+
+  for (const chunk of trackChunks) {
+    const tracks = await getTracks(chunk, token);
+    allTracks.push(...tracks);
+  }
+
+  return allTracks;
+}
 
 /**
  * Fetches track details from Spotify.
