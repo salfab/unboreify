@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Button, Grid, Typography, Box, LinearProgress, Tooltip, IconButton, Collapse } from '@mui/material';
 import { AutoAwesome as AutoAwesomeIcon } from '@mui/icons-material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
-import { getQueue, getPlaybackState, startPlayback, getUserPlaylists, SpotifyQueue, Track, getTrackDetails, getPlaylist, PlaylistResponse } from '../services/spotifyService';
+import { getQueue, getPlaybackState, startPlayback, getUserPlaylists, SpotifyQueue, Track, getPlaylist, PlaylistResponse } from '../services/spotifyService';
 import { buildAlternativePlaylist, ProgressCallback } from '../services/playlistService';
 import TrackCard from './TrackCard';
 import useMediaQuery from '@mui/material/useMediaQuery';
@@ -111,7 +111,7 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
       (async () => {
         const alternativePlaylist = await buildAlternativePlaylist(
           token!,
-          [queueData.currently_playing.track, ...queueData.queue].filter(o => !!o),
+          [queueData.currently_playing, ...queueData.queue].filter(o => !!o),
           lengthMultiplier,
           updateProgress
         );
