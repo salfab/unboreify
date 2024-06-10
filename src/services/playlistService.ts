@@ -1,4 +1,4 @@
-import { getTrackDetails, Track, getRecentlyPlayedTracks } from './spotifyService';
+import { Track, getRecentlyPlayedTracks, getTracks } from './spotifyService';
 import { getSuggestions, searchTrack, SuggestionRequest } from './deejaiService';
 import { loadValidatedTrackIds, addValidatedTrackId } from './localStorageService';
 
@@ -80,9 +80,7 @@ export const buildAlternativePlaylist = async (
   
       try {
         const suggestionResponse = await getSuggestions(payload);
-        const suggestionTracks = await Promise.all(
-          suggestionResponse.track_ids.map(trackId => getTrackDetails(trackId, token))
-        );
+        const suggestionTracks = await getTracks(suggestionResponse.track_ids, token);
   
         const filteredTracks = suggestionTracks.filter(
           (track: Track) => !recentlyPlayedUris.has(track.uri) && !existingUris.has(track.uri)

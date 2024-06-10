@@ -200,6 +200,18 @@ export const getPlaybackState = async (token: string): Promise<PlaybackState> =>
 };
 
 
+
+/**
+ * Fetches track details from Spotify.
+ * @param trackId The Spotify track ID.
+ * @param token The Spotify access token.
+ * @returns A promise that resolves to a Track object.
+ */
+export const getTracks = async (trackIds: string[], token: string): Promise<Track[]> => {
+  const data = await getRequest<Track[]>(`${BASE_URL}/tracks?ids=${trackIds.join(',')}`, token);
+  return data;
+};
+
 /**
  * Fetches track details from Spotify.
  * @param trackId The Spotify track ID.
