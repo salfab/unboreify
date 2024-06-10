@@ -57,14 +57,8 @@ export interface Track {
   album: Album;
 }
 
-export interface CurrentlyPlaying {
-  uri: string;
-  id: string;
-  track: Track;
-}
-
 export interface SpotifyQueue {
-  currently_playing: CurrentlyPlaying;
+  currently_playing: Track;
   queue: Track[];
 }
 

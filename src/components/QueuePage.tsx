@@ -34,13 +34,7 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
 
     try {
       const queue = await getQueue(token);
-      if (queue.currently_playing && !queue.currently_playing.track) {
-        const currentTrack = await getTrackDetails(queue.currently_playing.id, token);
-        queue.currently_playing.track = currentTrack;
-        setQueueData(queue);
-      } else {
-        setQueueData(queue);
-      }
+      setQueueData(queue);
     } catch (error) {
       console.error(error);
       throw error;
@@ -197,7 +191,7 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
               <Typography variant="h4" gutterBottom>
                 Currently Playing
               </Typography>
-              {queueData?.currently_playing?.track ? <TrackCard track={queueData.currently_playing.track} /> : <>Player stopped</>}
+              {queueData?.currently_playing ? <TrackCard track={queueData.currently_playing} /> : <>Player stopped</>}
             </Grid>
             <Grid item xs={12} sm={6}>
               <Typography variant="h4" gutterBottom>
