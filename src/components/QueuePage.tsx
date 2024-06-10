@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Button, Grid, Typography, Box, LinearProgress, Tooltip, IconButton, Collapse } from '@mui/material';
 import { AutoAwesome as AutoAwesomeIcon } from '@mui/icons-material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
@@ -20,15 +20,16 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
 
   const [queueData, setQueueData] = useState<SpotifyQueue | null>(null);
   const [alternativePlaylist, setAlternativePlaylist] = useState<Track[]>([]);
+  const [sourceTracks, setSourceTracks] = useState<Track[]>([]);
   const [playlists, setPlaylists] = useState<any[]>([]);
   const [progress, setProgress] = useState<{ phase: string; percentage: number }>({ phase: '', percentage: 0 });
   const [lengthMultiplier, setLengthMultiplier] = useState<number>(1);
-  const isBuildingRef = React.useRef(false);
+  const isBuilding = useRef<boolean>(false);
   const [isComplete, setIsComplete] = useState<boolean>(false);
   const [queueOpen, setQueueOpen] = useState<boolean>(!isMobile);
   const [selectedPlaylist, setSelectedPlaylist] = useState<PlaylistResponse | null>(null);
   const [showQueue, setShowQueue] = useState<boolean>(true);
-
+  const [mode, setMode] = useState<'extend' | 'alternative'>('alternative');
   const { showBoundary } = useErrorBoundary();
 
   const fetchQueue = useCallback(async () => {
@@ -37,6 +38,8 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
     try {
       const queue = await getQueue(token);
       setQueueData(queue);
+      setMode('alternative');
+      setSourceTracks([queue.currently_playing, ...queue.queue].filter(Boolean));
     } catch (error) {
       console.error(error);
       throw error;
@@ -49,25 +52,32 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
     try {
       const userPlaylists = await getUserPlaylists(token);
       setPlaylists(userPlaylists);
+      setMode('alternative')
     } catch (error) {
       console.error(error);
     }
   }, [token]);
 
-  const fetchPlaylistTracks = useCallback(
-    async (playlistId: string) => {
-      if (!token) throw new Error('No token provided');
+  const fetchPlaylistTracks = useCallback(async (playlistId: string) => {
+    if (!token) throw new Error('No token provided');
 
-      try {
-        const playlist = await getPlaylist(token, playlistId);
-        setSelectedPlaylist(playlist);
-        setShowQueue(false); // Show the playlist instead of the queue
-      } catch (error) {
-        console.error(error);
-      }
-    },
-    [token]
-  );
+    try {
+      const playlist = await getPlaylist(token, playlistId);
+      setSelectedPlaylist(playlist);
+
+    } catch (error) {
+      console.error(error);
+    }
+  }, [token]);
+
+  // when a selectedPlaylist is updated, we set the source tracks. An other effect will create an alternative playlist from those tracks
+  useEffect(() => {
+    if (selectedPlaylist === null) return
+    setMode('alternative');
+    setLengthMultiplier(1)
+    setSourceTracks(selectedPlaylist.tracks.items.map(o => o.track));
+    setShowQueue(false);
+  }, [selectedPlaylist]);
 
   const handleButtonClick = useCallback(async () => {
     if (!token) return;
@@ -87,7 +97,8 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
   }, [alternativePlaylist, token, fetchQueue]);
 
   const handleEnhanceClick = () => {
-    setLengthMultiplier(prev => Math.min(prev + 1, 5));
+    setSourceTracks(alternativePlaylist);
+    setMode('extend');
   };
 
   const updateProgress: ProgressCallback = useCallback((progress) => {
@@ -104,41 +115,39 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
     }
   }, [fetchQueue, fetchUserPlaylists]);
 
+  // this effect will create an alternative playlist from the source tracks, if it's not already building one.
   useEffect(() => {
-    let tracks: any[] = [];
-
-    if (showQueue && queueData) {
-      tracks = [queueData.currently_playing, ...queueData.queue].filter(o => !!o);
-    } else if (!showQueue && selectedPlaylist) {
-      tracks = selectedPlaylist.tracks.items.map(o => o.track);
-    }
-
-    if (tracks.length > 0) {
-      console.log('Building alternative playlist');
-      if (isBuildingRef.current) return;
-      isBuildingRef.current = true;
+    if (sourceTracks.length > 0 && !isBuilding.current) {
+      isBuilding.current = true;
       setIsComplete(false);
-      buildAlternativePlaylist(token!, tracks, lengthMultiplier, updateProgress)
-        .then((alternativePlaylist) => {
-          setAlternativePlaylist(alternativePlaylist);
-          setIsComplete(true);
-          console.log('Building complete');
-        },
-          showBoundary)
-        .finally(() => {
-          console.log('not building anymore');
-          isBuildingRef.current = false;
-        })
-    }
 
-  }, [lengthMultiplier, queueData, selectedPlaylist, showBoundary, showQueue, token, updateProgress]);
+      buildAlternativePlaylist(token!, sourceTracks, lengthMultiplier, updateProgress, mode)
+        .then((newAlternativePlaylist) => {
+          const uniqueTracks = newAlternativePlaylist.filter((track, index, self) =>
+            index === self.findIndex(t => t.uri === track.uri)
+          );
+          // TODO : check that these sets are going to be batched, since it's in an async callback.
+          setAlternativePlaylist(uniqueTracks);
+          setIsComplete(true);
+        })
+        .catch(showBoundary)
+        .finally(() => {
+          isBuilding.current = false;
+        });
+    }
+  }, [sourceTracks, lengthMultiplier, mode, token, updateProgress, showBoundary]);
+
   const toggleQueue = () => {
     setQueueOpen(!queueOpen);
   };
 
-  const handleBackToQueue = () => {
+  // fetching the queue will trigger an other effect which will set the source tracks.
+  const handleBackToQueue = async () => {
     setShowQueue(true);
+    setMode('alternative');
+    setLengthMultiplier(1)
     setSelectedPlaylist(null);
+    fetchQueue();
   };
 
   return (
@@ -171,7 +180,7 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
                   color="primary"
                   onClick={handleEnhanceClick}
                   startIcon={<AutoAwesomeIcon />}
-                  disabled={!isComplete || lengthMultiplier >= 5}
+                  disabled={!isComplete}
                 >
                   Enhance
                 </Button>
@@ -209,7 +218,8 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
       )}
       <Grid item xs={12} sm={6}>
         <Typography variant="h4" gutterBottom>
-          Alternative Playlist {lengthMultiplier > 1 && (<><AutoAwesomeIcon /> x{lengthMultiplier}</>)}
+          {/* TODO: create consts to make the conditions more clear */}
+          Alternative Playlist {mode === 'extend' && <AutoAwesomeIcon />}
         </Typography>
         {alternativePlaylist.map((track) => <TrackCard track={track} key={track.uri} />)}
       </Grid>
