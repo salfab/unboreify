@@ -42,18 +42,21 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
   const fetchQueue = useCallback(async (updateSourceTracks = true) => {
     if (!token) return;
 
-    try {
-      const queue = await getQueue(token);
-      setQueueData(queue);
-      setMode('alternative');
-      if (updateSourceTracks) {
-        setSourceTracks([queue.currently_playing, ...queue.queue].filter(Boolean));
-      }
-    } catch (error) {
-      console.error(error);
-      throw error;
-    }
-  }, [token]);
+    await getQueue(token)
+      .then((q) => {
+        console.log(q)
+        setQueueOpen(true);
+        setShowQueue(true);
+
+        // setSelectedPlaylist(null);
+        setQueueData(q);
+        setMode('alternative');
+        if (updateSourceTracks) {
+          setSourceTracks([q.currently_playing, ...q.queue].filter(Boolean));
+        }
+      })
+      .catch(showBoundary)
+  }, [showBoundary, token]);
 
   const fetchUserPlaylists = useCallback(async () => {
     if (!token) return;
@@ -76,6 +79,7 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
 
     } catch (error) {
       console.error(error);
+      throw error;
     }
   }, [token]);
 
@@ -96,9 +100,11 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
       const deviceId = playbackState.device.id;
 
       const uris = alternativePlaylist.map(track => track.uri);
-      await startPlayback(token, uris, deviceId);
-
-      await fetchQueue(false);
+      const result = await startPlayback(token, uris, deviceId);
+      console.log(result)
+      setTimeout(async () => {
+        fetchQueue(false);
+      }, 1000);
     } catch (error) {
       console.error(error);
       throw error;
@@ -216,7 +222,7 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
               )}
             </Typography>
             <Collapse in={queueOpen || !isMobile} timeout="auto" unmountOnExit>
-              {queueData?.queue.map((track) => <TrackCard track={track} key={track.uri} />)}
+              {queueData?.queue.map((track, i) => <TrackCard track={track} key={`${track.uri}-${i}`} />)}
             </Collapse>
           </Grid>
         </>
