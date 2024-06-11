@@ -48,7 +48,7 @@ const QueuePage: React.FC<QueuePageProps> = ({ token }) => {
         setQueueOpen(true);
         setShowQueue(true);
 
-        // setSelectedPlaylist(null);
+        setSelectedPlaylist(null);
         setQueueData(q);
         setMode('alternative');
         if (updateSourceTracks) {
