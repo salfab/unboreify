@@ -11,7 +11,7 @@ const TrackCard: React.FC<TrackCardProps> = ({ track }) => (
     <CardMedia
       component="img"
       sx={{ width: 151 }}
-      image={track.album.images[0].url}
+      image={track.album.images[0]?.url}
       alt={track.album.name}
     />
     <Box sx={{ display: 'flex', flexDirection: 'column' }}>
