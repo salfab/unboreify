@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef, useContext } from 'react';
 import { Button, Grid, Typography, Box, LinearProgress, Tooltip, IconButton, Collapse } from '@mui/material';
-import { AutoAwesome as AutoAwesomeIcon } from '@mui/icons-material';
+import { AutoAwesome as AutoAwesomeIcon, Refresh as RefreshIcon } from '@mui/icons-material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import useSpotifyApi from '../hooks/useSpotifyApi'; // Adjust the import path as needed
 import { buildAlternativePlaylist, ProgressCallback } from '../services/playlistService';
@@ -19,13 +19,9 @@ const QueuePage: React.FC = () => {
 
   useEffect(() => {
     if (!token && !loginInProgress) {
-      // if (!token || !tokenData || tokenData.expiresAt < Date.now()) {
-      // navigate to root if not authenticated
-      // debugger
       navigate('/');
     }
-  }
-    , [token, navigate, loginInProgress]);
+  }, [token, navigate, loginInProgress]);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -218,6 +214,9 @@ const QueuePage: React.FC = () => {
           <Grid item xs={12} sm={6}>
             <Typography variant="h4" gutterBottom>
               Queue
+              <IconButton onClick={() => fetchQueue(false)} size="small" sx={{ marginLeft: 1 }}>
+                <RefreshIcon />
+              </IconButton>
               {isMobile && (
                 <IconButton onClick={toggleQueue} size="small">
                   {queueOpen ? <ExpandLess /> : <ExpandMore />}
@@ -235,8 +234,16 @@ const QueuePage: React.FC = () => {
         </Grid>
       )}
       <Grid item xs={12} sm={6}>
-        <Typography variant="h4" gutterBottom>
-          Alternative Playlist {mode === 'extend' && <AutoAwesomeIcon />}
+        <Typography
+          variant="h4"
+          gutterBottom
+          display="flex"
+          alignItems="center"
+        >
+          Alternative Playlist
+          <IconButton onClick={handleEnhanceClick} size="small" sx={{ marginLeft: 1 }}>
+            <AutoAwesomeIcon  sx={{ color: mode === 'extend' ? 'primary.main' : 'text.primary' }} />
+          </IconButton>
         </Typography>
         {alternativePlaylist.map((track) => <TrackCard track={track} key={track.uri} />)}
       </Grid>
