@@ -1,9 +1,8 @@
 // App.tsx
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
 import { AppBar, Toolbar, Typography, Button, Container, IconButton, Avatar, Menu, MenuItem, ListItemText } from '@mui/material';
 import { Home as HomeIcon, QueueMusic as QueueIcon } from '@mui/icons-material';
-import { useSpotifyAuth } from './hooks/useSpotifyAuth';
 import QueuePage from './components/QueuePage';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
@@ -11,13 +10,17 @@ import HomePage from './components/HomePage';
 import Footer from './components/Footer';
 import { ErrorBoundary } from "react-error-boundary";
 import ErrorDisplay from './components/ErrorDisplay';
+import { IAuthContext, AuthContext } from 'react-oauth2-code-pkce';
+import useSpotifyApi from './hooks/useSpotifyApi';
 
 const App: React.FC = () => {
-  const { token, user, login, logout } = useSpotifyAuth();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const {token, logIn, logOut} = useContext<IAuthContext>(AuthContext)
+  const { currentUser } = useSpotifyApi();
+
 
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -46,7 +49,7 @@ const App: React.FC = () => {
                     <QueueIcon />
                   </IconButton>
                   <IconButton color="inherit" onClick={handleMenu}>
-                    <Avatar alt={user?.display_name} src={user?.images[0]?.url} />
+                    <Avatar alt={currentUser?.display_name} src={currentUser?.images[0]?.url} />
                   </IconButton>
                   <Menu
                     anchorEl={anchorEl}
@@ -62,9 +65,9 @@ const App: React.FC = () => {
                     }}
                   >
                     <MenuItem disabled>
-                      <ListItemText primary={user?.display_name} />
+                      <ListItemText primary={currentUser?.display_name} />
                     </MenuItem>
-                    <MenuItem onClick={logout}>Logout</MenuItem>
+                    <MenuItem onClick={logOut}>Logout</MenuItem>
                   </Menu>
                 </>
               ) : (
@@ -76,7 +79,7 @@ const App: React.FC = () => {
                     View Queues
                   </Button>
                   <IconButton color="inherit" onClick={handleMenu}>
-                    <Avatar alt={user?.display_name} src={user?.images[0]?.url} />
+                    <Avatar alt={currentUser?.display_name} src={currentUser?.images[0]?.url} />
                   </IconButton>
                   <Menu
                     anchorEl={anchorEl}
@@ -92,15 +95,15 @@ const App: React.FC = () => {
                     }}
                   >
                     <MenuItem disabled>
-                      <ListItemText primary={user?.display_name} />
+                      <ListItemText primary={currentUser?.display_name} />
                     </MenuItem>
-                    <MenuItem onClick={logout}>Logout</MenuItem>
+                    <MenuItem onClick={() => logOut()}>Logout</MenuItem>
                   </Menu>
                 </>
               )}
             </>
           ) : (
-            <Button color="inherit" onClick={login}>
+            <Button color="inherit" onClick={() => logIn()}>
               Login with Spotify
             </Button>
           )}
@@ -110,8 +113,8 @@ const App: React.FC = () => {
 
         <Container>
           <Routes>
-            <Route path="/queue" element={<QueuePage token={token} />} />
-            <Route path="/callback" element={<QueuePage token={token} />} />
+            <Route path="/queue" element={<QueuePage />} />
+            <Route path="/callback" element={<QueuePage  />} />
             <Route path="/" element={<HomePage />} /> {/* Placeholder for Home or other components */}
           </Routes>
         </Container>

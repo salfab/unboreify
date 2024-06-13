@@ -3,6 +3,11 @@ import axios from 'axios';
 
 const BASE_URL = 'https://api.spotify.com/v1';
 
+export interface SpotifyUser {
+  display_name: string;
+  images: { url: string }[];
+  // Add other user properties if needed
+}
 
 export interface PlaylistTrack {
   added_at: string;
@@ -106,6 +111,7 @@ export interface PlaybackState {
   is_playing: boolean;
   item: Track;
 }
+export const SCOPES = 'user-read-currently-playing user-read-playback-state user-modify-playback-state user-read-recently-played user-modify-playback-state';
 
 // Utility function to create headers
 const createHeaders = (token: string) => ({

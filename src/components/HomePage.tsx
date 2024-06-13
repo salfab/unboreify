@@ -1,18 +1,20 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { Container, Box, Typography, Button, Avatar } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { useSpotifyAuth } from '../hooks/useSpotifyAuth'; // Adjust the import path as necessary
 import logo from '../../public/logo.png';
+import { IAuthContext, AuthContext } from 'react-oauth2-code-pkce';
 
 const HomePage: React.FC = () => {
-  const { token, login } = useSpotifyAuth();
+  const {token} = useContext<IAuthContext>(AuthContext)
+  console.log('token', token);
+
   const navigate = useNavigate();
 
   const handleButtonClick = () => {
     if (token) {
       navigate('/queue');
     } else {
-      login();
+      throw new Error('Not signed in');
     }
   };
 
