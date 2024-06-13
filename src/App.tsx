@@ -67,7 +67,7 @@ const App: React.FC = () => {
                     <MenuItem disabled>
                       <ListItemText primary={currentUser?.display_name} />
                     </MenuItem>
-                    <MenuItem onClick={logOut}>Logout</MenuItem>
+                    <MenuItem onClick={() => logOut()}>Logout</MenuItem>
                   </Menu>
                 </>
               ) : (
