@@ -18,6 +18,7 @@ if ('serviceWorker' in navigator) {
   });
 }
 const authConfig: TAuthConfig = {
+  autoLogin: false,
   clientId: import.meta.env.VITE_SPOTIFY_CLIENT_ID,
   authorizationEndpoint: 'https://accounts.spotify.com/authorize',
   tokenEndpoint: 'https://accounts.spotify.com/api/token',

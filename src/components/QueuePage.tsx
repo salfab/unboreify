@@ -14,18 +14,18 @@ import { SpotifyQueue, Track, PlaylistResponse } from '../services/spotifyServic
 import { useNavigate } from 'react-router-dom';
 
 const QueuePage: React.FC = () => {
-  const { token } = useContext<IAuthContext>(AuthContext);
+  const { token, loginInProgress } = useContext<IAuthContext>(AuthContext);
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!token) {
+    if (!token && !loginInProgress) {
       // if (!token || !tokenData || tokenData.expiresAt < Date.now()) {
       // navigate to root if not authenticated
       // debugger
-      // navigate('/');
+      navigate('/');
     }
   }
-    , [token,  navigate]);
+    , [token, navigate, loginInProgress]);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));

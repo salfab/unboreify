@@ -5,7 +5,7 @@ import logo from '../../public/logo.png';
 import { IAuthContext, AuthContext } from 'react-oauth2-code-pkce';
 
 const HomePage: React.FC = () => {
-  const {token} = useContext<IAuthContext>(AuthContext)
+  const {token, logIn} = useContext<IAuthContext>(AuthContext)
   console.log('token', token);
 
   const navigate = useNavigate();
@@ -14,7 +14,7 @@ const HomePage: React.FC = () => {
     if (token) {
       navigate('/queue');
     } else {
-      throw new Error('Not signed in');
+      logIn()
     }
   };
 
