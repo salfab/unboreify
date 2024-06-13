@@ -97,7 +97,7 @@ const QueuePage: React.FC = () => {
   const handlePlayOnSpotify = useCallback(async () => {
     try {
       const playbackState = await getPlaybackState();
-      const deviceId = playbackState.device.id;
+      const deviceId = playbackState.device?.id;
 
       const uris = alternativePlaylist.map(track => track.uri);
       const result = await startPlayback(uris, deviceId);
