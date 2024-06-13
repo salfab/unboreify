@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef, useContext } from 'react';
 import { Button, Grid, Typography, Box, LinearProgress, Tooltip, IconButton, Collapse } from '@mui/material';
-import { AutoAwesome as AutoAwesomeIcon, Refresh as RefreshIcon } from '@mui/icons-material';
+import { AutoAwesome as AutoAwesomeIcon, Refresh as RefreshIcon, PlayArrow as PlayArrowIcon } from '@mui/icons-material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import useSpotifyApi from '../hooks/useSpotifyApi'; // Adjust the import path as needed
 import { buildAlternativePlaylist, ProgressCallback } from '../services/playlistService';
@@ -184,21 +184,20 @@ const QueuePage: React.FC = () => {
           </Typography>
           <Typography variant="body1">Your alternative playlist is ready with {alternativePlaylist.length} tracks.</Typography>
           <Box display="flex" alignItems="center" justifyContent="center" mt={2}>
-            <Button variant="contained" color="primary" onClick={handlePlayOnSpotify} sx={{ marginRight: 2 }}>
-              Play on Spotify
-            </Button>
-            <Tooltip title="Enhance">
-              <span>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={handleEnhanceClick}
-                  startIcon={<AutoAwesomeIcon />}
-                  disabled={!isComplete}
-                >
-                  Enhance
-                </Button>
-              </span>
+            <Tooltip title="Play on Spotify">
+              <IconButton
+                color="primary"
+                onClick={handlePlayOnSpotify}
+                sx={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: '50%',
+                  bgcolor: 'primary.main',
+                  color: 'white',
+                }}
+              >
+                <PlayArrowIcon />
+              </IconButton>
             </Tooltip>
           </Box>
         </Grid>
