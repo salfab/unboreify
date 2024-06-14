@@ -229,7 +229,7 @@ const QueuePage: React.FC = () => {
                 <Box display={'flex'} textAlign={'center'} flexDirection={'column'} alignItems={'center'}>
                   <RefreshIcon />
                   <Typography variant='caption' >
-                    Refresh
+                    Refresh Queue
                   </Typography>
                 </Box>
               </IconButton>
