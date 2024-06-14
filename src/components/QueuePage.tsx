@@ -134,13 +134,14 @@ const QueuePage: React.FC = () => {
 
   useEffect(() => {
     if (sourceTracks.length > 0 && !isBuilding.current) {
-      isBuilding.current = true;
       // note: If the source tracks haven't changed, don't rebuild the playlist.
       // useEffect could be triggered by a change of mode, but we're not interested in that.
       // stringify is used to compare the items in the arrays,instead of whether the object is the same.
       if (JSON.stringify(currentAlternativePlaylistSourceTracks) === JSON.stringify(sourceTracks.map(t => t.id))) {
         return;
       }
+      isBuilding.current = true;
+
       setIsComplete(false);
 
 
@@ -277,7 +278,10 @@ const QueuePage: React.FC = () => {
         </Typography>
         <Box>
           {playlists.map((playlist) => (
-            <Button key={playlist.id} variant="contained" onClick={() => fetchPlaylistTracks(playlist.id)} sx={{ marginRight: 1, marginBottom: 1 }}>
+            <Button key={playlist.id} variant="contained" onClick={() => {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+              return fetchPlaylistTracks(playlist.id);
+            }} sx={{ marginRight: 1, marginBottom: 1 }}>
               {playlist.name}
             </Button>
           ))}
