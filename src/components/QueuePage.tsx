@@ -48,6 +48,7 @@ const QueuePage: React.FC = () => {
   const [selectedPlaylist, setSelectedPlaylist] = useState<PlaylistResponse | null>(null);
   const [showQueue, setShowQueue] = useState<boolean>(true);
   const [mode, setMode] = useState<'extend' | 'alternative'>('alternative');
+  const [showProcessCompleteMessage, setShowProcessCompleteMessage] = useState<boolean>(false);
 
   const fetchQueue = useCallback(async (updateSourceTracks = true) => {
     await getQueue()
@@ -101,6 +102,7 @@ const QueuePage: React.FC = () => {
       const uris = alternativePlaylist.map(track => track.uri);
       const result = await startPlayback(uris, deviceId);
       console.log(result);
+      setShowProcessCompleteMessage(false)
       setTimeout(async () => {
         fetchQueue(false);
       }, 1000);
@@ -133,13 +135,15 @@ const QueuePage: React.FC = () => {
   useEffect(() => {
     if (sourceTracks.length > 0 && !isBuilding.current) {
       isBuilding.current = true;
-      setIsComplete(false);
-
       // note: If the source tracks haven't changed, don't rebuild the playlist.
       // useEffect could be triggered by a change of mode, but we're not interested in that.
-      if (currentAlternativePlaylistSourceTracks === sourceTracks.map(t => t.id)) {
+      // stringify is used to compare the items in the arrays,instead of whether the object is the same.
+      if (JSON.stringify(currentAlternativePlaylistSourceTracks) === JSON.stringify(sourceTracks.map(t => t.id))) {
         return;
       }
+      setIsComplete(false);
+
+
 
       // todo : fix this , we don't want to have a token in the compomnent.
       buildAlternativePlaylist(token, sourceTracks, 1, updateProgress, mode)
@@ -150,13 +154,15 @@ const QueuePage: React.FC = () => {
           setAlternativePlaylist(uniqueTracks);
           setCurrentAlternativePlaylistSourceTracks(sourceTracks.map(t => t.id))
           setIsComplete(true);
+          setShowProcessCompleteMessage(true);
+
         })
         .catch(showBoundary)
         .finally(() => {
           isBuilding.current = false;
         });
     }
-  }, [sourceTracks, mode, updateProgress, showBoundary]);
+  }, [sourceTracks, mode, updateProgress, showBoundary, currentAlternativePlaylistSourceTracks]);
 
   const toggleQueue = () => {
     setQueueOpen(!queueOpen);
@@ -182,7 +188,7 @@ const QueuePage: React.FC = () => {
           </Box>
         </Grid>
       )}
-      {isComplete && (
+      {isComplete && showProcessCompleteMessage && (
         <Grid item xs={12}>
           <Typography variant="h4" gutterBottom>
             You have been unboreified!
@@ -190,19 +196,22 @@ const QueuePage: React.FC = () => {
           <Typography variant="body1">Your alternative playlist is ready with {alternativePlaylist.length} tracks.</Typography>
           <Box display="flex" alignItems="center" justifyContent="center" mt={2}>
             <Tooltip title="Play on Spotify">
-              <IconButton
-                color="primary"
-                onClick={handlePlayOnSpotify}
-                sx={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: '50%',
-                  bgcolor: 'primary.main',
-                  color: 'white',
-                }}
-              >
-                <PlayArrowIcon />
-              </IconButton>
+              <Box sx={{ textAlign: 'center' }}>
+                <IconButton
+                  color="primary"
+                  onClick={handlePlayOnSpotify}
+                  sx={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: '50%',
+                    bgcolor: 'primary.main',
+                    color: 'white',
+                  }}
+                >
+                  <PlayArrowIcon />
+                </IconButton>
+                <Typography variant="body2">Play on Spotify</Typography>
+              </Box>
             </Tooltip>
           </Box>
         </Grid>
@@ -213,7 +222,7 @@ const QueuePage: React.FC = () => {
             <Typography variant="h4" gutterBottom>
               Currently Playing
             </Typography>
-            {queueData?.currently_playing ? <TrackCard track={queueData.currently_playing} /> : <>Player stopped</>}
+            {queueData?.currently_playing ? <TrackCard track={queueData.currently_playing} /> : <>Play music to get started</>}
           </Grid>
           <Grid item xs={12} sm={6}>
             <Typography variant="h4" gutterBottom>
