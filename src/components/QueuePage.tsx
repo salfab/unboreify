@@ -191,14 +191,14 @@ const QueuePage: React.FC = () => {
         </Grid>
       )}
       {isComplete && showProcessCompleteMessage && (
-        <Grid item xs={12}>
-          <Typography variant="h4" gutterBottom>
+        <Grid item xs={12} sx={{textAlign: 'center'}}>
+          <Typography variant="h4" gutterBottom >
             You have been unboreified!
           </Typography>
           <Typography variant="body1">Your alternative playlist is ready with {alternativePlaylist.length} tracks.</Typography>
           <Box display="flex" alignItems="center" justifyContent="center" mt={2}>
             <Tooltip title="Play on Spotify">
-              <Box sx={{ textAlign: 'center' }}>
+              <Box>
                 <IconButton
                   color="primary"
                   onClick={handlePlayOnSpotify}
