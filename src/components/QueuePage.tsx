@@ -47,7 +47,7 @@ const QueuePage: React.FC = () => {
   const [selectedPlaylist, setSelectedPlaylist] = useState<PlaylistResponse | null>(null);
   const [showQueue, setShowQueue] = useState<boolean>(true);
   const [mode, setMode] = useState<'extend' | 'alternative'>('alternative');
-  const [showProcessCompleteMessage, setShowProcessCompleteMessage] = useState<boolean>(false);
+  const [showProcessMessageBar, setShowProcessMessageBar] = useState<boolean>(false);
 
   // AbortController reference
   const abortController = useRef<AbortController | null>(null);
@@ -108,7 +108,7 @@ const QueuePage: React.FC = () => {
       const uris = alternativePlaylist.map(track => track.uri);
       const result = await startPlayback(uris, deviceId);
       console.log(result);
-      setShowProcessCompleteMessage(false)
+      setShowProcessMessageBar(false)
       setTimeout(async () => {
         fetchQueue(false);
       }, 1000);
@@ -164,7 +164,7 @@ const QueuePage: React.FC = () => {
           // TODO: carry the mode for better comparison as if to rebuild the playlist or not.
           setCurrentAlternativePlaylistSourceTracks({ tracks: sourceTracks.map(t => t.id), mode: mode });
           setIsComplete(true);
-          setShowProcessCompleteMessage(true);
+          setShowProcessMessageBar(true);
           setQueueOpen(false);
 
         })
@@ -202,7 +202,7 @@ const QueuePage: React.FC = () => {
           </Box>
         </Grid>
       )}
-      {isComplete && showProcessCompleteMessage && (
+      {isComplete && showProcessMessageBar && (
         <Grid item xs={12} sx={{ textAlign: 'center' }}>
           <Typography variant="h4" gutterBottom >
             You have been unboreified!
@@ -291,7 +291,7 @@ const QueuePage: React.FC = () => {
             <Typography variant="h4" gutterBottom>
               Queue
               {/* TODO create a variable for this to make it more clear */}
-              {(!showProcessCompleteMessage && isComplete) &&
+              {(isComplete && !showProcessMessageBar) || !isComplete  &&
                 <>
                   <Tooltip title="Refresh currently playing queue">
                     <IconButton onClick={() => fetchQueue(false)} size="small" sx={{ marginLeft: 1 }}>
