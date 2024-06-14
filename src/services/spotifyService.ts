@@ -1,4 +1,3 @@
-// src/services/spotifyService.ts
 import axios from 'axios';
 
 const BASE_URL = 'https://api.spotify.com/v1';
@@ -28,10 +27,9 @@ export interface PlaylistTrack {
   };
 }
 
-
 export interface PlaylistResponse {
-  tracks : { items: { track: Track }[]};
-  name : string;
+  tracks: { items: { track: Track }[] };
+  name: string;
   description: string;
 }
 
@@ -44,6 +42,7 @@ export interface PlaylistTracksResponse {
   previous: string | null;
   total: number;
 }
+
 export interface Artist {
   name: string;
   id: string;
@@ -55,7 +54,7 @@ export interface Album {
 }
 
 export interface Track {
-  id : string;
+  id: string;
   name: string;
   uri: string;
   artists: Artist[];
@@ -120,22 +119,33 @@ const createHeaders = (token: string) => ({
   },
 });
 
+// Utility function to refresh the token and retry the request
+const handleRequest = async <T>(token: string, request: (safeToken: string) => Promise<T>): Promise<T> => {
+  try {
+    return await request(token);
+  } catch (error: any) {
+    if (error.response && error.response.status === 401) {
+
+      const newToken = await TokenManager.refreshToken();
+      return await request(newToken);
+    }
+    throw error;
+  }
+};
+
 // Utility function for GET requests with generics
 const getRequest = async <T>(url: string, token: string): Promise<T> => {
-  const response = await axios.get(url, createHeaders(token));
-  return response.data;
+  return handleRequest(token, (safeToken: string) => axios.get(url, createHeaders(safeToken)).then((response) => response.data));
 };
 
 // Utility function for POST requests
 const postRequest = async (url: string, token: string, data: any = {}) => {
-  const response = await axios.post(url, data, createHeaders(token));
-  return response.data;
+  return handleRequest(token, (safeToken) => axios.post(url, data, createHeaders(safeToken)).then((response) => response.data));
 };
 
 // Utility function for PUT requests
 const putRequest = async (url: string, token: string, data: any = {}) => {
-  const response = await axios.put(url, data, createHeaders(token));
-  return response.data;
+  return handleRequest(token, (safeToken) => axios.put(url, data, createHeaders(safeToken)).then((response) => response.data));
 };
 
 export const getCurrentTrack = async (token: string) => {
@@ -207,7 +217,6 @@ export const getPlaybackState = async (token: string): Promise<PlaybackState> =>
 
 const maxIdsPerCallGetTracks = 50;
 
-
 /**
  * Fetches track details from Spotify.
  * @param trackId The Spotify track ID.
@@ -218,11 +227,11 @@ export const getTracks = async (trackIds: string[], token: string): Promise<Trac
   if (trackIds.length > maxIdsPerCallGetTracks) {
     return fetchTracksInBatches(trackIds, token);
   }
-  const data = await getRequest<{tracks: Track[]}>(`${BASE_URL}/tracks?ids=${trackIds.join(',')}`, token);
+  const data = await getRequest<{ tracks: Track[] }>(`${BASE_URL}/tracks?ids=${trackIds.join(',')}`, token);
   return data.tracks;
 };
 
-const  fetchTracksInBatches = async(trackIds: string[], token: string) : Promise<Track[]> =>{
+const fetchTracksInBatches = async (trackIds: string[], token: string): Promise<Track[]> => {
   const trackChunks = [];
 
   for (let i = 0; i < trackIds.length; i += maxIdsPerCallGetTracks) {
@@ -237,7 +246,7 @@ const  fetchTracksInBatches = async(trackIds: string[], token: string) : Promise
   }
 
   return allTracks;
-}
+};
 
 /**
  * Fetches track details from Spotify.
@@ -258,3 +267,76 @@ export const getTrackDetails = async (trackId: string, token: string): Promise<T
   } as Track;
 };
 
+
+/**
+ * Dirty workaround around the fact the oauth pkce lib doesn't expose the refresh token publicly tu manually refresh the access token.
+ * This is to implement a retry in case  we make a call, and the access token couldn't be refreshed in time and is now expired.
+ */
+class TokenManager {
+  private static isRefreshing: boolean = false;
+  private static pendingPromise: Promise<string> | null = null;
+
+  static async refreshToken(): Promise<string> {
+    const refreshToken = (localStorage.getItem('SPOTIFY_refreshToken') as string)
+    if (this.isRefreshing) {
+      // Wait for the ongoing refresh to complete and then return the token from local storage
+      await this.pendingPromise;
+      return localStorage.getItem('SPOTIFY_token') || '';
+    }
+
+    this.isRefreshing = true;
+    this.pendingPromise = this.refreshSpotifyToken(refreshToken);
+
+    try {
+      const token = await this.pendingPromise;
+      localStorage.setItem('SPOTIFY_token', token);
+      return token;
+    } finally {
+      this.isRefreshing = false;
+      this.pendingPromise = Promise.resolve('read the token that was just retrieved ✨');
+    }
+  }
+
+
+  
+/**
+ * Function to perform an HTTP POST request to the Spotify token endpoint
+ * @param refreshToken - The refresh token to use for the request
+ * @param clientId - The client ID of the Spotify application
+ * @param redirectUri - The redirect URI registered with the Spotify application
+ * @param scope - The scope of the access request
+ */
+static async refreshSpotifyToken(refreshToken: string): Promise<string> {
+  const endpoint = 'https://accounts.spotify.com/api/token';
+  const grantType = 'refresh_token';
+
+
+  const params = new URLSearchParams();
+  params.append('grant_type', grantType);
+  params.append('refresh_token', refreshToken.slice(1, -1));
+  params.append('client_id', import.meta.env.VITE_SPOTIFY_CLIENT_ID);
+  params.append('redirect_uri', import.meta.env.VITE_SPOTIFY_REDIRECT_URI);
+  params.append('scope', SCOPES);
+
+  try {
+    const response = await axios.post(endpoint, params.toString(), {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
+    });
+
+
+
+    const access_token = response.data.access_token;
+    const refresh_token = `"${response.data.refresh_token}"`;
+    // TODO : try to find a way that is more resilient to config changes.
+    localStorage.setItem('SPOTIFY_token', `"${access_token}"`);
+    localStorage.setItem('SPOTIFY_refreshToken', refresh_token);
+    return access_token as string;
+
+  } catch (error) {
+    console.error('Error fetching token:', error);
+    throw error;
+  }
+}
+}

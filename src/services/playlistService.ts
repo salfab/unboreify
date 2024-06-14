@@ -1,4 +1,4 @@
-import { Track, getRecentlyPlayedTracks, getTracks } from './spotifyService';
+import { RecentlyPlayedResponse, Track, getRecentlyPlayedTracks, getTracks } from './spotifyService';
 import { getSuggestions, searchTrack, SuggestionRequest } from './deejaiService';
 import { loadValidatedTrackIds, addValidatedTrackId } from './localStorageService';
 
@@ -35,7 +35,7 @@ export const buildAlternativePlaylist = async (
   const validatedTrackIds = loadValidatedTrackIds();
 
   progressCallback({ phase: 'Fetching recently played tracks', percentage: 10 });
-  const recentlyPlayed = await getRecentlyPlayedTracks(token);
+  const recentlyPlayed : RecentlyPlayedResponse = { items: [], cursors: {after: '0', before: '0'}, href: '', limit: 0, next: '0'} // await getRecentlyPlayedTracks(token);
   const recentlyPlayedUris = new Set(recentlyPlayed.items.map(item => item.track.uri));
   const existingUris = new Set(tracks.map(track => track.uri));
 
