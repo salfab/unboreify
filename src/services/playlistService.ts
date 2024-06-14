@@ -81,7 +81,7 @@ export const buildAlternativePlaylist = async (
       noise: 0,
     };
 
-    progressCallback({ phase: `Fetching suggestions for batch ${i / adjustedBatchSize + 1}`, percentage: 50 + (i / validTrackIds.length) * 50 });
+    progressCallback({ phase: `Getting suggestions - step ${i / adjustedBatchSize + 1}`, percentage: 50 + (i / validTrackIds.length) * 50 });
 
     try {
       const suggestionResponse = await getSuggestions(payload);
