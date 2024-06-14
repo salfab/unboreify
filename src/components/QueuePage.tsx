@@ -60,8 +60,8 @@ const QueuePage: React.FC = () => {
 
       setSelectedPlaylist(null);
       setQueueData(queue);
-      setMode('alternative');
       if (updateSourceTracks) {
+        setMode('alternative');
         setSourceTracks([queue.currently_playing, ...queue.queue].filter(Boolean));
       }
       return queue;
@@ -174,7 +174,7 @@ const QueuePage: React.FC = () => {
           }
         })
         .catch(showBoundary);
-        // TODO: check if we should we null out the abort controller, or do we risk having some race conditions and clear out the wrong one?
+      // TODO: check if we should we null out the abort controller, or do we risk having some race conditions and clear out the wrong one?
     }
   }, [sourceTracks, mode, updateProgress, showBoundary, currentAlternativePlaylistSourceTracks]);
 
@@ -291,7 +291,7 @@ const QueuePage: React.FC = () => {
             <Typography variant="h4" gutterBottom>
               Queue
               {/* TODO create a variable for this to make it more clear */}
-              {(isComplete && !showProcessMessageBar) || !isComplete  &&
+              {(isComplete && !showProcessMessageBar) || !isComplete &&
                 <>
                   <Tooltip title="Refresh currently playing queue">
                     <IconButton onClick={() => fetchQueue(false)} size="small" sx={{ marginLeft: 1 }}>
