@@ -280,54 +280,55 @@ const QueuePage: React.FC = () => {
               Currently Playing
             </Typography>
             {queueData?.currently_playing ? <TrackCard track={queueData.currently_playing} /> : <>Play music to get started</>}
-            <Grid item xs={12} sm={6}>
-              <Typography variant="h4" gutterBottom>
-                Queue
-                {/* TODO create a variable for this to make it more clear */}
-                {(!showProcessCompleteMessage &&  isComplete) &&
-                  <>
-                    <Tooltip title="Refresh currently playing queue">
-                      <IconButton onClick={() => fetchQueue(false)} size="small" sx={{ marginLeft: 1 }}>
-                        <RefreshIcon />
-                      </IconButton>
-                    </Tooltip>
-
-                    <Tooltip title="Go all CSI and ENHANCE your current playing queue !">
-                      <IconButton onClick={async () => {
-                        let tracks: Track[] = [];
-                        if (!queueData) {
-                          const queue = await fetchQueue(false);
-                          tracks = [queue?.currently_playing, ...queue!.queue].filter(Boolean);
-
-                          setSourceTracks(tracks);
-                        } else {
-                          tracks = [queueData?.currently_playing, ...queueData!.queue].filter(Boolean);
-                        }
-                        setMode('extend');
-                        setCurrentAlternativePlaylistSourceTracks({ tracks: [], mode: 'extend' });
-                        setSourceTracks(tracks);
-                      }} size="small" sx={{ marginLeft: 1 }}>
-                        <AutoFixHighIcon />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Unboreify my queue : replace all the songs with similar ones." >
-                      <IconButton onClick={() => fetchQueue(true)} size="small" sx={{ marginLeft: 1 }}>
-                        <AutoModeIcon />
-                      </IconButton>
-                    </Tooltip>
-                  </>}
-                {isMobile && (
-                  <IconButton onClick={toggleQueue} size="small">
-                    {queueOpen ? <ExpandLess /> : <ExpandMore />}
-                  </IconButton>
-                )}
-              </Typography>
-              {isMobile && <Divider />}
-              <Collapse in={queueOpen || !isMobile} timeout="auto" unmountOnExit>
-                {queueData?.queue.map((track, i) => <TrackCard track={track} key={`${track.uri}-${i}`} />)}
-              </Collapse>
-            </Grid>
           </Grid>
+          <Grid item xs={12} sm={6}>
+            <Typography variant="h4" gutterBottom>
+              Queue
+              {/* TODO create a variable for this to make it more clear */}
+              {(!showProcessCompleteMessage && isComplete) &&
+                <>
+                  <Tooltip title="Refresh currently playing queue">
+                    <IconButton onClick={() => fetchQueue(false)} size="small" sx={{ marginLeft: 1 }}>
+                      <RefreshIcon />
+                    </IconButton>
+                  </Tooltip>
+
+                  <Tooltip title="Go all CSI and ENHANCE your current playing queue !">
+                    <IconButton onClick={async () => {
+                      let tracks: Track[] = [];
+                      if (!queueData) {
+                        const queue = await fetchQueue(false);
+                        tracks = [queue?.currently_playing, ...queue!.queue].filter(Boolean);
+
+                        setSourceTracks(tracks);
+                      } else {
+                        tracks = [queueData?.currently_playing, ...queueData!.queue].filter(Boolean);
+                      }
+                      setMode('extend');
+                      setCurrentAlternativePlaylistSourceTracks({ tracks: [], mode: 'extend' });
+                      setSourceTracks(tracks);
+                    }} size="small" sx={{ marginLeft: 1 }}>
+                      <AutoFixHighIcon />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Unboreify my queue : replace all the songs with similar ones." >
+                    <IconButton onClick={() => fetchQueue(true)} size="small" sx={{ marginLeft: 1 }}>
+                      <AutoModeIcon />
+                    </IconButton>
+                  </Tooltip>
+                </>}
+              {isMobile && (
+                <IconButton onClick={toggleQueue} size="small">
+                  {queueOpen ? <ExpandLess /> : <ExpandMore />}
+                </IconButton>
+              )}
+            </Typography>
+            {isMobile && <Divider />}
+            <Collapse in={queueOpen || !isMobile} timeout="auto" unmountOnExit>
+              {queueData?.queue.map((track, i) => <TrackCard track={track} key={`${track.uri}-${i}`} />)}
+            </Collapse>
+          </Grid>
+
         </>
       ) : (
         <Grid item xs={12} sm={6}>
