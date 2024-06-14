@@ -1,4 +1,4 @@
-import { RecentlyPlayedResponse, Track, getRecentlyPlayedTracks, getTracks } from './spotifyService';
+import { RecentlyPlayedResponse, Track, getTracks } from './spotifyService';
 import { getSuggestions, searchTrack, SuggestionRequest } from './deejaiService';
 import { loadValidatedTrackIds, addValidatedTrackId } from './localStorageService';
 
