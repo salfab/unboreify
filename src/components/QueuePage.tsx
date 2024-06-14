@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef, useContext } from 'react';
 import { Button, Grid, Typography, Box, LinearProgress, Tooltip, IconButton, Collapse } from '@mui/material';
-import { AutoAwesome as AutoAwesomeIcon, Refresh as RefreshIcon, PlayArrow as PlayArrowIcon } from '@mui/icons-material';
+import { AutoAwesome as AutoAwesomeIcon, Refresh as RefreshIcon, PlayArrow as PlayArrowIcon, AutoFixHigh as AutoFixHighIcon } from '@mui/icons-material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import useSpotifyApi from '../hooks/useSpotifyApi'; // Adjust the import path as needed
 import { buildAlternativePlaylist, ProgressCallback } from '../services/playlistService';
@@ -38,10 +38,10 @@ const QueuePage: React.FC = () => {
 
   const [queueData, setQueueData] = useState<SpotifyQueue | null>(null);
   const [alternativePlaylist, setAlternativePlaylist] = useState<Track[]>([]);
+  const [currentAlternativePlaylistSourceTracks, setCurrentAlternativePlaylistSourceTracks] = useState<string[]>([]);
   const [sourceTracks, setSourceTracks] = useState<Track[]>([]);
   const [playlists, setPlaylists] = useState<any[]>([]);
   const [progress, setProgress] = useState<{ phase: string; percentage: number }>({ phase: '', percentage: 0 });
-  const [lengthMultiplier, setLengthMultiplier] = useState<number>(1);
   const isBuilding = useRef<boolean>(false);
   const [isComplete, setIsComplete] = useState<boolean>(false);
   const [queueOpen, setQueueOpen] = useState<boolean>(!isMobile);
@@ -89,7 +89,6 @@ const QueuePage: React.FC = () => {
   useEffect(() => {
     if (selectedPlaylist === null) return;
     setMode('alternative');
-    setLengthMultiplier(1);
     setSourceTracks(selectedPlaylist.tracks.items.map(o => o.track));
     setShowQueue(false);
   }, [selectedPlaylist]);
@@ -136,13 +135,20 @@ const QueuePage: React.FC = () => {
       isBuilding.current = true;
       setIsComplete(false);
 
+      // note: If the source tracks haven't changed, don't rebuild the playlist.
+      // useEffect could be triggered by a change of mode, but we're not interested in that.
+      if (currentAlternativePlaylistSourceTracks === sourceTracks.map(t => t.id)) {
+        return;
+      }
+
       // todo : fix this , we don't want to have a token in the compomnent.
-      buildAlternativePlaylist(token, sourceTracks, lengthMultiplier, updateProgress, mode)
+      buildAlternativePlaylist(token, sourceTracks, 1, updateProgress, mode)
         .then((newAlternativePlaylist) => {
           const uniqueTracks = newAlternativePlaylist.filter((track, index, self) =>
             index === self.findIndex(t => t.uri === track.uri)
           );
           setAlternativePlaylist(uniqueTracks);
+          setCurrentAlternativePlaylistSourceTracks(sourceTracks.map(t => t.id))
           setIsComplete(true);
         })
         .catch(showBoundary)
@@ -150,7 +156,7 @@ const QueuePage: React.FC = () => {
           isBuilding.current = false;
         });
     }
-  }, [sourceTracks, lengthMultiplier, mode, updateProgress, showBoundary]);
+  }, [sourceTracks, mode, updateProgress, showBoundary]);
 
   const toggleQueue = () => {
     setQueueOpen(!queueOpen);
@@ -159,9 +165,8 @@ const QueuePage: React.FC = () => {
   const handleBackToQueue = async () => {
     setShowQueue(true);
     setMode('alternative');
-    setLengthMultiplier(1);
     setSelectedPlaylist(null);
-    fetchQueue();
+    fetchQueue(false);
   };
 
   return (
@@ -213,9 +218,17 @@ const QueuePage: React.FC = () => {
           <Grid item xs={12} sm={6}>
             <Typography variant="h4" gutterBottom>
               Queue
-              <IconButton onClick={() => fetchQueue(false)} size="small" sx={{ marginLeft: 1 }}>
-                <RefreshIcon />
-              </IconButton>
+
+              <Tooltip title="Refresh currently playing queue">
+                <IconButton onClick={() => fetchQueue(false)} size="small" sx={{ marginLeft: 1 }}>
+                  <RefreshIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Go all CSI and ENHANCE this playing queue !">
+                <IconButton onClick={() => fetchQueue(true)} size="small" sx={{ marginLeft: 1 }}>
+                  <AutoFixHighIcon />
+                </IconButton>
+              </Tooltip>
               {isMobile && (
                 <IconButton onClick={toggleQueue} size="small">
                   {queueOpen ? <ExpandLess /> : <ExpandMore />}
@@ -240,9 +253,12 @@ const QueuePage: React.FC = () => {
           alignItems="center"
         >
           Alternative Playlist
-          <IconButton onClick={handleEnhanceClick} size="small" sx={{ marginLeft: 1 }}>
-            <AutoAwesomeIcon  sx={{ color: mode === 'extend' ? 'primary.main' : 'text.primary' }} />
-          </IconButton>
+          <Tooltip title="You like your alternative playlist, but you wanted more ? Double the fun by doubling its size !">
+
+            <IconButton onClick={handleEnhanceClick} size="small" sx={{ marginLeft: 1 }}>
+              <AutoAwesomeIcon sx={{ color: mode === 'extend' ? 'primary.main' : 'text.primary' }} />
+            </IconButton>
+          </Tooltip>
         </Typography>
         {alternativePlaylist.map((track) => <TrackCard track={track} key={track.uri} />)}
       </Grid>

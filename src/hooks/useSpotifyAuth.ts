@@ -1,12 +1,8 @@
 // src/hooks/useSpotifyAuth.ts
 import { useEffect, useState } from 'react';
-import { getCurrentUser } from '../services/spotifyService';
+import { SpotifyUser, getCurrentUser } from '../services/spotifyService';
 
-interface SpotifyUser {
-  display_name: string;
-  images: { url: string }[];
-  // Add other user properties if needed
-}
+
 const CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
 const REDIRECT_URI = import.meta.env.VITE_SPOTIFY_REDIRECT_URI;
 const AUTH_ENDPOINT = 'https://accounts.spotify.com/authorize';

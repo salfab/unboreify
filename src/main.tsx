@@ -19,11 +19,15 @@ if ('serviceWorker' in navigator) {
 }
 const authConfig: TAuthConfig = {
   autoLogin: false,
+  storageKeyPrefix: 'SPOTIFY_',
   clientId: import.meta.env.VITE_SPOTIFY_CLIENT_ID,
   authorizationEndpoint: 'https://accounts.spotify.com/authorize',
   tokenEndpoint: 'https://accounts.spotify.com/api/token',
   redirectUri: import.meta.env.VITE_SPOTIFY_REDIRECT_URI,
   scope: SCOPES,
+  tokenExpiresIn: 3600,
+  refreshTokenExpiresIn: 31_536_000, // 365 days
+  decodeToken: false,
   onRefreshTokenExpire: (event: TRefreshTokenExpiredEvent) => event.logIn(undefined, undefined, "popup"),
 }
 
@@ -33,7 +37,6 @@ ReactDOM.render(
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <AuthProvider authConfig={authConfig}>
-       
         <App /> 
       </AuthProvider>
     </ThemeProvider>
