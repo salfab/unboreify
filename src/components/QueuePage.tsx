@@ -54,7 +54,6 @@ const QueuePage: React.FC = () => {
     await getQueue()
       .then((q) => {
         console.log(q);
-        setQueueOpen(true);
         setShowQueue(true);
 
         setSelectedPlaylist(null);
@@ -235,7 +234,7 @@ const QueuePage: React.FC = () => {
                   <RefreshIcon />
                 </IconButton>
               </Tooltip>
-              <Tooltip title="Go all CSI and ENHANCE this playing queue !">
+              <Tooltip title="Go all CSI and ENHANCE your current playing queue !">
                 <IconButton onClick={() => fetchQueue(true)} size="small" sx={{ marginLeft: 1 }}>
                   <AutoFixHighIcon />
                 </IconButton>
