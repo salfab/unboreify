@@ -156,6 +156,7 @@ const QueuePage: React.FC = () => {
           setCurrentAlternativePlaylistSourceTracks(sourceTracks.map(t => t.id))
           setIsComplete(true);
           setShowProcessCompleteMessage(true);
+          setQueueOpen(false);
 
         })
         .catch(showBoundary)
