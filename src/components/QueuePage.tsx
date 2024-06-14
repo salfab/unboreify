@@ -178,7 +178,7 @@ const QueuePage: React.FC = () => {
   };
 
   return (
-    <Grid container spacing={3}>
+    <Grid container spacing={3} sx={{pt: 2}}>
       {!isComplete && (
         <Grid item xs={12}>
           <Typography variant="h4" gutterBottom>
