@@ -189,12 +189,6 @@ const QueuePage: React.FC = () => {
     fetchQueue(false);
   };
 
-  const handleAbort = () => {
-    if (abortController.current) {
-      abortController.current.abort();
-    }
-  };
-
   return (
     <Grid container spacing={3} sx={{ pt: 2 }}>
       {!isComplete && (
