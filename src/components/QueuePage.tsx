@@ -291,7 +291,7 @@ const QueuePage: React.FC = () => {
             <Typography variant="h4" gutterBottom>
               Queue
               {/* TODO create a variable for this to make it more clear */}
-              {(isComplete && !showProcessMessageBar) || !isComplete &&
+              {((isComplete && !showProcessMessageBar) || !isComplete ) &&
                 <>
                   <Tooltip title="Refresh currently playing queue">
                     <IconButton onClick={() => fetchQueue(false)} size="small" sx={{ marginLeft: 1 }}>
