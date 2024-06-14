@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef, useContext } from 'react';
 import { Button, Grid, Typography, Box, LinearProgress, Tooltip, IconButton, Collapse, Divider } from '@mui/material';
-import { AutoAwesome as AutoAwesomeIcon, Refresh as RefreshIcon, PlayArrow as PlayArrowIcon, AutoFixHigh as AutoFixHighIcon } from '@mui/icons-material';
+import { AutoAwesome as AutoAwesomeIcon, Refresh as RefreshIcon, PlayArrow as PlayArrowIcon, AutoFixHigh as AutoFixHighIcon, AutoMode as AutoModeIcon } from '@mui/icons-material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import useSpotifyApi from '../hooks/useSpotifyApi'; // Adjust the import path as needed
 import { buildAlternativePlaylist, ProgressCallback } from '../services/playlistService';
@@ -38,7 +38,7 @@ const QueuePage: React.FC = () => {
 
   const [queueData, setQueueData] = useState<SpotifyQueue | null>(null);
   const [alternativePlaylist, setAlternativePlaylist] = useState<Track[]>([]);
-  const [currentAlternativePlaylistSourceTracks, setCurrentAlternativePlaylistSourceTracks] = useState<string[]>([]);
+  const [currentAlternativePlaylistSourceTracks, setCurrentAlternativePlaylistSourceTracks] = useState<{tracks: string[], mode: 'extend' | 'alternative'}>({tracks: [], mode: 'alternative'});
   const [sourceTracks, setSourceTracks] = useState<Track[]>([]);
   const [playlists, setPlaylists] = useState<any[]>([]);
   const [progress, setProgress] = useState<{ phase: string; percentage: number }>({ phase: '', percentage: 0 });
@@ -50,20 +50,26 @@ const QueuePage: React.FC = () => {
   const [mode, setMode] = useState<'extend' | 'alternative'>('alternative');
   const [showProcessCompleteMessage, setShowProcessCompleteMessage] = useState<boolean>(false);
 
-  const fetchQueue = useCallback(async (updateSourceTracks = true) => {
-    await getQueue()
-      .then((q) => {
-        console.log(q);
-        setShowQueue(true);
+ 
+  const fetchQueue = useCallback(async (updateSourceTracks = true): Promise<SpotifyQueue> => {
+    try {
+      const queue = await getQueue();
+      console.log(queue);
+      setShowQueue(true);
 
-        setSelectedPlaylist(null);
-        setQueueData(q);
-        setMode('alternative');
-        if (updateSourceTracks) {
-          setSourceTracks([q.currently_playing, ...q.queue].filter(Boolean));
-        }
-      })
-      .catch(showBoundary);
+      setSelectedPlaylist(null);
+      setQueueData(queue);
+      setMode('alternative');
+      if (updateSourceTracks) {
+        setSourceTracks([queue.currently_playing, ...queue.queue].filter(Boolean));
+      }
+      return queue;
+
+    } catch (error) {
+      showBoundary(error);
+      throw error;
+    }
+
   }, [showBoundary, getQueue]);
 
   const fetchUserPlaylists = useCallback(async () => {
@@ -133,10 +139,10 @@ const QueuePage: React.FC = () => {
 
   useEffect(() => {
     if (sourceTracks.length > 0 && !isBuilding.current) {
-      // note: If the source tracks haven't changed, don't rebuild the playlist.
+      // note: If the source tracks haven't changed, nor the mode, don't rebuild the playlist.
       // useEffect could be triggered by a change of mode, but we're not interested in that.
       // stringify is used to compare the items in the arrays,instead of whether the object is the same.
-      if (JSON.stringify(currentAlternativePlaylistSourceTracks) === JSON.stringify(sourceTracks.map(t => t.id))) {
+      if (currentAlternativePlaylistSourceTracks.mode === mode && JSON.stringify(currentAlternativePlaylistSourceTracks.tracks) === JSON.stringify(sourceTracks.map(t => t.id))) {
         return;
       }
       isBuilding.current = true;
@@ -152,7 +158,8 @@ const QueuePage: React.FC = () => {
             index === self.findIndex(t => t.uri === track.uri)
           );
           setAlternativePlaylist(uniqueTracks);
-          setCurrentAlternativePlaylistSourceTracks(sourceTracks.map(t => t.id))
+          // TODO: carry the mode for better comparison as if to rebuild the playlist or not.
+          setCurrentAlternativePlaylistSourceTracks({ tracks: sourceTracks.map(t => t.id), mode: mode });
           setIsComplete(true);
           setShowProcessCompleteMessage(true);
           setQueueOpen(false);
@@ -177,7 +184,7 @@ const QueuePage: React.FC = () => {
   };
 
   return (
-    <Grid container spacing={3} sx={{pt: 2}}>
+    <Grid container spacing={3} sx={{ pt: 2 }}>
       {!isComplete && (
         <Grid item xs={12}>
           <Typography variant="h4" gutterBottom>
@@ -190,7 +197,7 @@ const QueuePage: React.FC = () => {
         </Grid>
       )}
       {isComplete && showProcessCompleteMessage && (
-        <Grid item xs={12} sx={{textAlign: 'center'}}>
+        <Grid item xs={12} sx={{ textAlign: 'center' }}>
           <Typography variant="h4" gutterBottom >
             You have been unboreified!
           </Typography>
@@ -234,9 +241,28 @@ const QueuePage: React.FC = () => {
                   <RefreshIcon />
                 </IconButton>
               </Tooltip>
+
               <Tooltip title="Go all CSI and ENHANCE your current playing queue !">
-                <IconButton onClick={() => fetchQueue(true)} size="small" sx={{ marginLeft: 1 }}>
+                <IconButton onClick={async () => {
+                  let tracks: Track[] = [];
+                  if (!queueData) {
+                    const queue = await fetchQueue(false);
+                    tracks = [queue?.currently_playing, ...queue!.queue].filter(Boolean);
+
+                    setSourceTracks(tracks);
+                  } else {
+                    tracks = [queueData?.currently_playing, ...queueData!.queue].filter(Boolean);
+                  }
+                  setMode('extend');
+                  setCurrentAlternativePlaylistSourceTracks({ tracks: [], mode : 'extend'});
+                  setSourceTracks(tracks);
+                }} size="small" sx={{ marginLeft: 1 }}>
                   <AutoFixHighIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Unboreify my queue : replace all the songs with similar ones." >
+                <IconButton onClick={() => fetchQueue(true)} size="small" sx={{ marginLeft: 1 }}>
+                  <AutoModeIcon />
                 </IconButton>
               </Tooltip>
               {isMobile && (
