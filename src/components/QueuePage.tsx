@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef, useContext } from 'react';
-import { Button, Grid, Typography, Box, LinearProgress, Tooltip, IconButton, Collapse } from '@mui/material';
+import { Button, Grid, Typography, Box, LinearProgress, Tooltip, IconButton, Collapse, Divider } from '@mui/material';
 import { AutoAwesome as AutoAwesomeIcon, Refresh as RefreshIcon, PlayArrow as PlayArrowIcon, AutoFixHigh as AutoFixHighIcon } from '@mui/icons-material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import useSpotifyApi from '../hooks/useSpotifyApi'; // Adjust the import path as needed
@@ -246,6 +246,7 @@ const QueuePage: React.FC = () => {
                 </IconButton>
               )}
             </Typography>
+            {isMobile && <Divider />}
             <Collapse in={queueOpen || !isMobile} timeout="auto" unmountOnExit>
               {queueData?.queue.map((track, i) => <TrackCard track={track} key={`${track.uri}-${i}`} />)}
             </Collapse>
