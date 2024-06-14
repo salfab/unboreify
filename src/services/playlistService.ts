@@ -31,16 +31,29 @@ export const buildAlternativePlaylist = async (
   lengthMultiplier = 1,
   progressCallback: ProgressCallback,
   mode: 'extend' | 'alternative' = 'alternative',
+  signal: AbortSignal
 ): Promise<Track[]> => {
+
+  const checkAbort = () => {
+    if (signal.aborted) {
+    progressCallback({ phase: 'Operation aborted', percentage: 100 });
+      const error = new Error('Operation aborted');
+      throw error.name = 'AbortError';
+    }
+  };
+
   const validatedTrackIds = loadValidatedTrackIds();
 
   progressCallback({ phase: 'Fetching recently played tracks', percentage: 10 });
+  checkAbort();
   const recentlyPlayed : RecentlyPlayedResponse = { items: [], cursors: {after: '0', before: '0'}, href: '', limit: 0, next: '0'} // await getRecentlyPlayedTracks(token);
   const recentlyPlayedUris = new Set(recentlyPlayed.items.map(item => item.track.uri));
   const existingUris = new Set(tracks.map(track => track.uri));
 
   const validTrackIds: string[] = [];
   for (let i = 0; i < tracks.length; i++) {
+    checkAbort();
+
     const track = tracks[i];
     progressCallback({ phase: `Searching for track ID (${i + 1}/${tracks.length})`, percentage: 20 + (i / tracks.length) * 30 });
     const cachedEntry = validatedTrackIds.get(track.uri);
@@ -73,6 +86,7 @@ export const buildAlternativePlaylist = async (
   const adjustedBatchSize = Math.round(DEEJAI_BATCH_SIZE / lengthMultiplier);
 
   for (let i = 0; i < validTrackIds.length; i += adjustedBatchSize) {
+    checkAbort();
     const batch = validTrackIds.slice(i, i + adjustedBatchSize);
     const payload: SuggestionRequest = {
       track_ids: batch,

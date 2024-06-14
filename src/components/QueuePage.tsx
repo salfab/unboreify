@@ -42,7 +42,6 @@ const QueuePage: React.FC = () => {
   const [sourceTracks, setSourceTracks] = useState<Track[]>([]);
   const [playlists, setPlaylists] = useState<any[]>([]);
   const [progress, setProgress] = useState<{ phase: string; percentage: number }>({ phase: '', percentage: 0 });
-  const isBuilding = useRef<boolean>(false);
   const [isComplete, setIsComplete] = useState<boolean>(false);
   const [queueOpen, setQueueOpen] = useState<boolean>(!isMobile);
   const [selectedPlaylist, setSelectedPlaylist] = useState<PlaylistResponse | null>(null);
@@ -50,6 +49,8 @@ const QueuePage: React.FC = () => {
   const [mode, setMode] = useState<'extend' | 'alternative'>('alternative');
   const [showProcessCompleteMessage, setShowProcessCompleteMessage] = useState<boolean>(false);
 
+  // AbortController reference
+  const abortController = useRef<AbortController | null>(null);
 
   const fetchQueue = useCallback(async (updateSourceTracks = true): Promise<SpotifyQueue> => {
     try {
@@ -138,21 +139,23 @@ const QueuePage: React.FC = () => {
   }, [fetchQueue, fetchUserPlaylists, token]);
 
   useEffect(() => {
-    if (sourceTracks.length > 0 && !isBuilding.current) {
+    if (sourceTracks.length > 0) {
       // note: If the source tracks haven't changed, nor the mode, don't rebuild the playlist.
       // useEffect could be triggered by a change of mode, but we're not interested in that.
       // stringify is used to compare the items in the arrays,instead of whether the object is the same.
       if (currentAlternativePlaylistSourceTracks.mode === mode && JSON.stringify(currentAlternativePlaylistSourceTracks.tracks) === JSON.stringify(sourceTracks.map(t => t.id))) {
         return;
       }
-      isBuilding.current = true;
-
       setIsComplete(false);
 
-
+      // Abort any ongoing build process
+      if (abortController.current) {
+        abortController.current.abort();
+      }
+      abortController.current = new AbortController();
 
       // todo : fix this , we don't want to have a token in the compomnent.
-      buildAlternativePlaylist(token, sourceTracks, 1, updateProgress, mode)
+      buildAlternativePlaylist(token, sourceTracks, 1, updateProgress, mode, abortController.current.signal)
         .then((newAlternativePlaylist) => {
           const uniqueTracks = newAlternativePlaylist.filter((track, index, self) =>
             index === self.findIndex(t => t.uri === track.uri)
@@ -165,10 +168,13 @@ const QueuePage: React.FC = () => {
           setQueueOpen(false);
 
         })
-        .catch(showBoundary)
-        .finally(() => {
-          isBuilding.current = false;
-        });
+        .catch((error: Error) => {
+          if (error.name === 'AbortError') {
+            console.log('Operation aborted');
+          }
+        })
+        .catch(showBoundary);
+        // TODO: check if we should we null out the abort controller, or do we risk having some race conditions and clear out the wrong one?
     }
   }, [sourceTracks, mode, updateProgress, showBoundary, currentAlternativePlaylistSourceTracks]);
 
@@ -181,6 +187,12 @@ const QueuePage: React.FC = () => {
     setMode('alternative');
     setSelectedPlaylist(null);
     fetchQueue(false);
+  };
+
+  const handleAbort = () => {
+    if (abortController.current) {
+      abortController.current.abort();
+    }
   };
 
   return (
