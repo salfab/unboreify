@@ -1,7 +1,7 @@
 // App.tsx
 import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
-import { AppBar, Toolbar, Typography, Button, Container, IconButton, Avatar, Menu, MenuItem, ListItemText } from '@mui/material';
+import { AppBar, Toolbar, Typography, Button, Container, IconButton, Avatar, Menu, MenuItem, ListItemText, ListItem, Divider } from '@mui/material';
 import { Home as HomeIcon, QueueMusic as QueueIcon, Settings as SettingsIcon } from '@mui/icons-material';
 import QueuePage from './components/QueuePage';
 import useMediaQuery from '@mui/material/useMediaQuery';
@@ -13,23 +13,24 @@ import ErrorDisplay from './components/ErrorDisplay';
 import { IAuthContext, AuthContext } from 'react-oauth2-code-pkce';
 import useSpotifyApi from './hooks/useSpotifyApi';
 import Settings from './components/Settings';
+import { getPlaylistMultiplier } from './services/localStorageService';
 
 const App: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const {token, logIn, logOut} = useContext<IAuthContext>(AuthContext)
+  const { token, logIn, logOut } = useContext<IAuthContext>(AuthContext)
   const { currentUser } = useSpotifyApi();
-const [settingsOpen, setSettingsOpen] = useState(false);
-const [playlistMultiplier, setPlaylistMultiplier] = useState(localStorage.getItem('playlistMultiplier') ? parseInt(localStorage.getItem('playlistMultiplier') as string) : 1);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [playlistMultiplier, setPlaylistMultiplier] = useState(getPlaylistMultiplier());
 
-useEffect(() => {
-  // store the playlist multiplier in local storage
-  localStorage.setItem('playlistMultiplier', playlistMultiplier.toString());
-}
-, [playlistMultiplier]);
-  
+  useEffect(() => {
+    // store the playlist multiplier in local storage
+    localStorage.setItem('playlistMultiplier', playlistMultiplier.toString());
+  }
+    , [playlistMultiplier]);
+
 
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -83,7 +84,10 @@ useEffect(() => {
                     <MenuItem disabled>
                       <ListItemText primary={currentUser?.display_name} />
                     </MenuItem>
-                    <MenuItem onClick={() => logOut()}>Logout</MenuItem>
+                    
+                    <MenuItem onClick={() => openSettings()}><SettingsIcon /> Settings</MenuItem>
+                    <Divider sx={{ my: 0.5 }} />
+                    <MenuItem onClick={() => logOut()}>Sign out</MenuItem>
                   </Menu>
                 </>
               ) : (
@@ -114,9 +118,7 @@ useEffect(() => {
                       <ListItemText primary={currentUser?.display_name} />
                     </MenuItem>
                     <MenuItem onClick={() => openSettings()}><SettingsIcon /> Settings</MenuItem>
-                    <MenuItem disabled>
-                      <ListItemText primary="Divider" />
-                    </MenuItem>
+                    <Divider sx={{ my: 0.5 }} />
                     <MenuItem onClick={() => logOut()}>Sign out</MenuItem>
                   </Menu>
                 </>
@@ -134,7 +136,7 @@ useEffect(() => {
         <Container>
           <Routes>
             <Route path="/queue" element={<QueuePage />} />
-            <Route path="/callback" element={<QueuePage  />} />
+            <Route path="/callback" element={<QueuePage />} />
             <Route path="/" element={<HomePage />} /> {/* Placeholder for Home or other components */}
           </Routes>
         </Container>
