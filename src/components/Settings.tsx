@@ -1,5 +1,5 @@
 import { FC, useMemo, useState } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Slider, Typography, Box, Tooltip, IconButton } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Slider, Typography, Box, IconButton, Popover } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
 
 interface SettingsProps {
@@ -18,12 +18,26 @@ const valueTextMap: { [key: number]: string } = {
 };
 
 const Settings: FC<SettingsProps> = ({ open, onClose, currentPlaylistMultiplier, playlistMultiplierChangedCallback }) => {
+  const [playlistMileage, setPlaylistMileage] = useState(currentPlaylistMultiplier);
+  const playlistMileageDisplay = useMemo(() => valueTextMap[playlistMileage], [playlistMileage]);
+
   const handleSliderChange = (_event: Event, newValue: number | number[]) => {
     playlistMultiplierChangedCallback(newValue as number);
     setPlaylistMileage(newValue as number);
   };
-  const [playlistMileage, setPlaylistMileage] = useState(currentPlaylistMultiplier);
-  const playlistMileageDisplay = useMemo(() => valueTextMap[playlistMileage], [playlistMileage]);
+
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+  const handleInfoClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleInfoClose = () => {
+    setAnchorEl(null);
+  };
+
+  const openPopover = Boolean(anchorEl);
+  const popoverId = openPopover ? 'info-popover' : undefined;
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth>
@@ -33,21 +47,35 @@ const Settings: FC<SettingsProps> = ({ open, onClose, currentPlaylistMultiplier,
           <Typography gutterBottom>
             Playlist Mileage
           </Typography>
-          <Tooltip title="Defines how much longer than the original playlist the generated alternative one will be">
-            <IconButton>
-              <InfoIcon />
-            </IconButton>
-          </Tooltip>
+          <IconButton onClick={handleInfoClick}>
+            <InfoIcon />
+          </IconButton>
+          <Popover
+            id={popoverId}
+            open={openPopover}
+            anchorEl={anchorEl}
+            onClose={handleInfoClose}
+            anchorOrigin={{
+              vertical: 'bottom',
+              horizontal: 'left',
+            }}
+            transformOrigin={{
+              vertical: 'top',
+              horizontal: 'left',
+            }}
+          >
+            <Box p={2}>
+              <Typography>
+                Defines how much longer than the original playlist the generated alternative one will be.
+              </Typography>
+            </Box>
+          </Popover>
         </Box>
         <Slider
           value={playlistMileage}
           onChange={handleSliderChange}
           aria-labelledby="playlist-mileage-slider"
-
-          valueLabelFormat={(v) => {
-            console.log('value label', v);
-              return valueTextMap[v as number];
-          }}
+          valueLabelFormat={(v) => valueTextMap[v as number]}
           step={1}
           marks
           min={1}
