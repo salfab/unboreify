@@ -80,10 +80,6 @@ This application currently uses the [Deej-AI API](https://deej-ai.online/) for a
 
 We use Netlify and its redirect rules to interact with the Deej-AI API without running into CORS issues. This allows us to proxy API requests seamlessly. To benefit from these redirects during local development, use the `netlify dev` command.
 
-## License
-
-This project is licensed under the MIT License.
-
 ## Acknowledgements
 
 - [Spotify Web API](https://developer.spotify.com/documentation/web-api/)
