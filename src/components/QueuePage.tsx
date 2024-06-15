@@ -3,7 +3,7 @@ import { Button, Grid, Typography, Box, LinearProgress, Tooltip, IconButton, Col
 import { AutoAwesome as AutoAwesomeIcon, Refresh as RefreshIcon, PlayArrow as PlayArrowIcon, AutoFixHigh as AutoFixHighIcon, AutoMode as AutoModeIcon } from '@mui/icons-material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import useSpotifyApi from '../hooks/useSpotifyApi'; // Adjust the import path as needed
-import { buildAlternativePlaylist, ProgressCallback } from '../services/playlistService';
+import { buildAlternativePlaylist, trimPlaylistCyclesWithinQueue, ProgressCallback } from '../services/playlistService';
 import TrackCard from './TrackCard';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
@@ -55,6 +55,17 @@ const QueuePage: React.FC = () => {
   const fetchQueue = useCallback(async (updateSourceTracks = true): Promise<SpotifyQueue> => {
     try {
       const queue = await getQueue();
+      const playbackState = await getPlaybackState();
+      if (playbackState.context.type === 'playlist') {
+        const playlistId = playbackState.context.uri.split(':').pop();
+        const playlist = await getPlaylist(playlistId!);
+        // replace the queue tracks with the playlist tracks to avoid having more tracks than what's on the playlist. also, remove the begining of the playlist so it only keeps the tracks of the begining queue
+
+        const cleanQueueTracks = trimPlaylistCyclesWithinQueue(queue.queue, playlist.tracks.items.map(o => o.track));
+
+        // Update the queue with the cleaned tracks
+        queue.queue = cleanQueueTracks;
+      }
       console.log(queue);
       setShowQueue(true);
 
@@ -71,7 +82,7 @@ const QueuePage: React.FC = () => {
       throw error;
     }
 
-  }, [showBoundary, getQueue]);
+  }, [getQueue, getPlaybackState, getPlaylist, showBoundary]);
 
   const fetchUserPlaylists = useCallback(async () => {
     try {
@@ -291,7 +302,7 @@ const QueuePage: React.FC = () => {
             <Typography variant="h4" gutterBottom>
               Queue
               {/* TODO create a variable for this to make it more clear */}
-              {((isComplete && !showProcessMessageBar) || !isComplete ) &&
+              {((isComplete && !showProcessMessageBar) || !isComplete) &&
                 <>
                   <Tooltip title="Refresh currently playing queue">
                     <IconButton onClick={() => fetchQueue(false)} size="small" sx={{ marginLeft: 1 }}>

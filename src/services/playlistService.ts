@@ -154,3 +154,21 @@ export const buildAlternativePlaylist = async (
   progressCallback({ phase: 'Completed', percentage: 100 });
   return alternativePlaylist;
 };
+
+export const trimPlaylistCyclesWithinQueue = (queueTracks: Track[], playlistTracks : Track[]) => {
+  for (let i = 0; i < queueTracks.length; i++) {
+    let match = true;
+    for (let j = 0; j + i < queueTracks.length && j < playlistTracks.length; j++) {
+      if (queueTracks[i + j].id !== playlistTracks[j].id) {
+        match = false;
+        break;
+      }
+    }
+    if (match) {
+      // Found a match, return the trimmed queue
+      return queueTracks.slice(0, i);
+    }
+  }
+  // No match found, return the original queue
+  return queueTracks;
+};
