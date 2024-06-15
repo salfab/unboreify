@@ -54,8 +54,7 @@ const QueuePage: React.FC = () => {
 
   const fetchQueue = useCallback(async (updateSourceTracks = true): Promise<SpotifyQueue> => {
     try {
-      const queue = await getQueue();
-      const playbackState = await getPlaybackState();
+      const [queue, playbackState] = await Promise.all([getQueue(), getPlaybackState()]);
       if (playbackState.context.type === 'playlist') {
         const playlistId = playbackState.context.uri.split(':').pop();
         const playlist = await getPlaylist(playlistId!);
