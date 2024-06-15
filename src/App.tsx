@@ -65,9 +65,13 @@ const App: React.FC = () => {
                   <IconButton color="inherit" component={Link} to="/queue">
                     <QueueIcon />
                   </IconButton>
+                  <MenuItem onClick={() => openSettings()}>
+                    <SettingsIcon />
+                  </MenuItem>
                   <IconButton color="inherit" onClick={handleMenu}>
                     <Avatar alt={currentUser?.display_name} src={currentUser?.images[0]?.url} />
                   </IconButton>
+                 
                   <Menu
                     anchorEl={anchorEl}
                     open={open}
@@ -84,9 +88,7 @@ const App: React.FC = () => {
                     <MenuItem disabled>
                       <ListItemText primary={currentUser?.display_name} />
                     </MenuItem>
-                    
-                    <MenuItem onClick={() => openSettings()}><SettingsIcon /> Settings</MenuItem>
-                    <Divider sx={{ my: 0.5 }} />
+
                     <MenuItem onClick={() => logOut()}>Sign out</MenuItem>
                   </Menu>
                 </>
