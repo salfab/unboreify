@@ -66,7 +66,7 @@ const Settings: FC<SettingsProps> = ({ open, onClose, currentPlaylistMultiplier,
           >
             <Box p={2}>
               <Typography>
-                Defines how much longer than the original playlist the generated alternative one will be.
+                Craving more tunes? This determines how much longer your new playlist will keep the party going compared to the original.
               </Typography>
             </Box>
           </Popover>
