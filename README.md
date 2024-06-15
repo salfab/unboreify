@@ -7,7 +7,7 @@ Unboreify is a React application that allows users to log into Spotify, view the
 
 Spotify's algorithm for "Made for You" playlists tends to feature the same curated songs, even when the same artist has produced numerous other amazing and fitting tracks. This often leads to what can be described as "Spotify algorithm fatigue." I wanted to build an app that finds similar songs but offers a fresh selection of tracks, avoiding the repetition of the same few songs. Unboreify aims to provide a more diverse and engaging listening experience by identifying and playing lesser-known but equally fitting songs.
 
-The alternative playlists are generated using AI, by [using a model ](https://github.com/teticio/Deej-AI) developped by [Robert Dargavel Smith]([url](https://github.com/teticio))
+The alternative playlists are generated using AI, by [using a model ](https://github.com/teticio/Deej-AI) developped by [Robert Dargavel Smith](https://github.com/teticio)
 
 ## Features
 
