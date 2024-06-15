@@ -12,6 +12,7 @@ import PlaylistPresenter from './PlaylistPresenter';
 import { IAuthContext, AuthContext } from 'react-oauth2-code-pkce';
 import { SpotifyQueue, Track, PlaylistResponse } from '../services/spotifyService';
 import { useNavigate } from 'react-router-dom';
+import { getPlaylistMultiplier } from '../services/localStorageService';
 
 const QueuePage: React.FC = () => {
   const { token, loginInProgress } = useContext<IAuthContext>(AuthContext);
@@ -42,7 +43,7 @@ const QueuePage: React.FC = () => {
   const [sourceTracks, setSourceTracks] = useState<Track[]>([]);
   const [playlists, setPlaylists] = useState<any[]>([]);
   const [progress, setProgress] = useState<{ phase: string; percentage: number }>({ phase: '', percentage: 0 });
-  const [isComplete, setIsComplete] = useState<boolean>(false);
+  const [isComplete, setIsComplete] = useState<boolean>(true);
   const [queueOpen, setQueueOpen] = useState<boolean>(!isMobile);
   const [selectedPlaylist, setSelectedPlaylist] = useState<PlaylistResponse | null>(null);
   const [showQueue, setShowQueue] = useState<boolean>(true);
@@ -55,7 +56,7 @@ const QueuePage: React.FC = () => {
   const fetchQueue = useCallback(async (updateSourceTracks = true): Promise<SpotifyQueue> => {
     try {
       const [queue, playbackState] = await Promise.all([getQueue(), getPlaybackState()]);
-      if (playbackState.context.type === 'playlist') {
+      if (playbackState.context?.type === 'playlist') {
         const playlistId = playbackState.context.uri.split(':').pop();
         const playlist = await getPlaylist(playlistId!);
         // replace the queue tracks with the playlist tracks to avoid having more tracks than what's on the playlist. also, remove the begining of the playlist so it only keeps the tracks of the begining queue
@@ -165,7 +166,7 @@ const QueuePage: React.FC = () => {
       abortController.current = new AbortController();
 
       // todo : fix this , we don't want to have a token in the compomnent.
-      buildAlternativePlaylist(token, sourceTracks, 1, updateProgress, mode, abortController.current.signal)
+      buildAlternativePlaylist(token, sourceTracks, getPlaylistMultiplier(), updateProgress, mode, abortController.current.signal)
         .then((newAlternativePlaylist) => {
           const uniqueTracks = newAlternativePlaylist.filter((track, index, self) =>
             index === self.findIndex(t => t.uri === track.uri)

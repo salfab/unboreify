@@ -1,8 +1,8 @@
 // App.tsx
-import React, { useContext, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
 import { AppBar, Toolbar, Typography, Button, Container, IconButton, Avatar, Menu, MenuItem, ListItemText } from '@mui/material';
-import { Home as HomeIcon, QueueMusic as QueueIcon } from '@mui/icons-material';
+import { Home as HomeIcon, QueueMusic as QueueIcon, Settings as SettingsIcon } from '@mui/icons-material';
 import QueuePage from './components/QueuePage';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
@@ -12,6 +12,7 @@ import { ErrorBoundary } from "react-error-boundary";
 import ErrorDisplay from './components/ErrorDisplay';
 import { IAuthContext, AuthContext } from 'react-oauth2-code-pkce';
 import useSpotifyApi from './hooks/useSpotifyApi';
+import Settings from './components/Settings';
 
 const App: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -20,12 +21,27 @@ const App: React.FC = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const {token, logIn, logOut} = useContext<IAuthContext>(AuthContext)
   const { currentUser } = useSpotifyApi();
+const [settingsOpen, setSettingsOpen] = useState(false);
+const [playlistMultiplier, setPlaylistMultiplier] = useState(localStorage.getItem('playlistMultiplier') ? parseInt(localStorage.getItem('playlistMultiplier') as string) : 1);
 
+useEffect(() => {
+  // store the playlist multiplier in local storage
+  localStorage.setItem('playlistMultiplier', playlistMultiplier.toString());
+}
+, [playlistMultiplier]);
+  
 
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
 
+  const openSettings = useCallback(() => {
+    setSettingsOpen(true);
+  }, []);
+
+  const closeSettings = useCallback(() => {
+    setSettingsOpen(false);
+  }, []);
 
   const handleClose = () => {
     setAnchorEl(null);
@@ -97,7 +113,11 @@ const App: React.FC = () => {
                     <MenuItem disabled>
                       <ListItemText primary={currentUser?.display_name} />
                     </MenuItem>
-                    <MenuItem onClick={() => logOut()}>Logout</MenuItem>
+                    <MenuItem onClick={() => openSettings()}><SettingsIcon /> Settings</MenuItem>
+                    <MenuItem disabled>
+                      <ListItemText primary="Divider" />
+                    </MenuItem>
+                    <MenuItem onClick={() => logOut()}>Sign out</MenuItem>
                   </Menu>
                 </>
               )}
@@ -119,7 +139,12 @@ const App: React.FC = () => {
           </Routes>
         </Container>
       </ErrorBoundary>
-
+      <Settings
+        open={settingsOpen}
+        onClose={closeSettings}
+        currentPlaylistMultiplier={playlistMultiplier}
+        playlistMultiplierChangedCallback={(m) => setPlaylistMultiplier(m)}
+      />
       <Footer />
     </Router>
   );

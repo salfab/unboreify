@@ -66,3 +66,7 @@ export const addValidatedTrackId = (trackUri: string, trackId: string) => {
 
   saveValidatedTrackIds(validatedTrackIds);
 };
+
+export const getPlaylistMultiplier = () => {
+  return localStorage.getItem('playlistMultiplier') ? parseInt(localStorage.getItem('playlistMultiplier') as string) : 1;
+}
