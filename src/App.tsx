@@ -1,7 +1,7 @@
 // App.tsx
 import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
-import { AppBar, Toolbar, Typography, Button, Container, IconButton, Avatar, Menu, MenuItem, ListItemText, ListItem, Divider } from '@mui/material';
+import { AppBar, Toolbar, Typography, Button, Container, IconButton, Avatar, Menu, MenuItem, ListItemText, Divider } from '@mui/material';
 import { Home as HomeIcon, QueueMusic as QueueIcon, Settings as SettingsIcon } from '@mui/icons-material';
 import QueuePage from './components/QueuePage';
 import useMediaQuery from '@mui/material/useMediaQuery';
