@@ -25,7 +25,7 @@ const HomePage: React.FC = () => {
         flexDirection="column"
         alignItems="center"
         justifyContent="center"
-        minHeight="100vh"
+        minHeight="75vh"
         textAlign="center"
       >
         <Avatar alt="Unboreify logo" src={logo} sx={{ width: 128, height: 128, marginBottom: 2 }} />
