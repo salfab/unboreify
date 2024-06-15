@@ -1,4 +1,4 @@
-import React, { FC, useMemo, useState } from 'react';
+import { FC, useMemo, useState } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Slider, Typography, Box, Tooltip, IconButton } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
 
@@ -18,7 +18,7 @@ const valueTextMap: { [key: number]: string } = {
 };
 
 const Settings: FC<SettingsProps> = ({ open, onClose, currentPlaylistMultiplier, playlistMultiplierChangedCallback }) => {
-  const handleSliderChange = (event: Event, newValue: number | number[]) => {
+  const handleSliderChange = (_event: Event, newValue: number | number[]) => {
     playlistMultiplierChangedCallback(newValue as number);
     setPlaylistMileage(newValue as number);
   };
