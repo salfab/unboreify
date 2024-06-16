@@ -6,6 +6,7 @@ import { AuthProvider, TAuthConfig, TRefreshTokenExpiredEvent } from 'react-oaut
 import { SCOPES } from './services/spotifyService';
 import { createRoot } from 'react-dom/client';
 import { ErrorBoundary } from 'react-error-boundary';
+import ErrorDisplay from './components/ErrorDisplay';
 
 const theme = createTheme();
 // Register service worker in your main js file
@@ -35,7 +36,7 @@ const authConfig: TAuthConfig = {
 const container = document.getElementById('root');
 const root = createRoot(container!);
 root.render(
-  <ErrorBoundary onError={cleanup}>
+  <ErrorBoundary FallbackComponent={ErrorDisplay} onError={cleanup}>
 
     <React.StrictMode>
       <ThemeProvider theme={theme}>
