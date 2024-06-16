@@ -75,6 +75,8 @@ This project is set up to deploy using Netlify's CI/CD.
 
 This application currently uses the [Deej-AI API](https://deej-ai.online/) for additional functionality. The AI model, developed by the talented [Teticio](https://github.com/teticio) as part of his master's thesis, employs musical spectral analysis to create feature vectors similar to the word2vec technique used in natural language processing. Instead of focusing on musical preferences, it identifies musical similarities between tracks. The model processes large amounts of tracks data and uses a Track2Vec embedding technique to find songs with similar characteristics. Read more on his GitHub account for more details, it's really cool stuff. In the future, we plan to host our own instance of the Deej-AI API using Docker, making the app more flexible and deployable anywhere.
 
+However, as per Spotify's terms of use and general restrictions, we will not train the model to expand the capabilities of the existing model, which will be used as-is. 
+
 
 ## CORS Handling
 
