@@ -145,6 +145,7 @@ const QueuePage: React.FC = () => {
     setProgress(progress);
   }, []);
 
+  // TODO: Check why this effect is being called twice on page refresh
   useEffect(() => {
     if (!token) return;
     try {
@@ -154,7 +155,7 @@ const QueuePage: React.FC = () => {
       console.error(error);
       throw error;
     }
-  }, [fetchQueue, fetchUserPlaylists, token]);
+  }, [fetchQueue, fetchUserPlaylists]);
 
   useEffect(() => {
     if (sourceTracks.length > 0) {
@@ -171,6 +172,8 @@ const QueuePage: React.FC = () => {
         abortController.current.abort();
       }
       abortController.current = new AbortController();
+
+      console.log('Building alternative playlist');
 
       // todo : fix this , we don't want to have a token in the compomnent.
       buildAlternativePlaylist(token, sourceTracks, getPlaylistMultiplier(), updateProgress, mode, abortController.current.signal)
@@ -194,7 +197,7 @@ const QueuePage: React.FC = () => {
         .catch(showBoundary);
       // TODO: check if we should we null out the abort controller, or do we risk having some race conditions and clear out the wrong one?
     }
-  }, [sourceTracks, mode, updateProgress, showBoundary, currentAlternativePlaylistSourceTracks]);
+  }, [sourceTracks, mode, updateProgress, showBoundary]);
 
   const toggleQueue = () => {
     setQueueOpen(!queueOpen);

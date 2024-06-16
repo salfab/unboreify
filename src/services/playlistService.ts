@@ -1,6 +1,9 @@
 import { RecentlyPlayedResponse, Track, getTracks } from './spotifyService';
 import { getSuggestions, searchTrack, SuggestionRequest } from './deejaiService';
-import { loadValidatedTrackIds, addValidatedTrackId } from './localStorageService';
+import { loadValidatedTrackIds, addValidatedTrackId, ValidatedTrackEntry } from './localStorageService';
+import pLimit from 'p-limit';
+
+const limit = pLimit(5);
 
 const DEEJAI_BATCH_SIZE = 40;
 
@@ -51,33 +54,7 @@ export const buildAlternativePlaylist = async (
   const recentlyPlayedUris = new Set(recentlyPlayed.items.map(item => item.track.uri));
   const existingUris = new Set(tracks.map(track => track.uri));
 
-  const validTrackIds: string[] = [];
-  for (let i = 0; i < tracks.length; i++) {
-    checkAbort();
-
-    const track = tracks[i];
-    progressCallback({ phase: `Searching for track ID (${i + 1}/${tracks.length})`, percentage: 20 + (i / tracks.length) * 30 });
-    const cachedEntry = validatedTrackIds.get(track.uri);
-
-    if (cachedEntry) {
-      validTrackIds.push(cachedEntry.id);
-      // Update the timestamp
-      addValidatedTrackId(track.uri, cachedEntry.id);
-    } else {
-      try {
-        const validTrackId = await searchForTrackId(track);
-        if (validTrackId) {
-          validTrackIds.push(validTrackId);
-          addValidatedTrackId(track.uri, validTrackId);
-        } else {
-          console.warn(`No valid track ID found for track: ${track.name} by ${track.artists[0].name}`);
-        }
-      } catch (error) {
-        console.error('Error searching for track ID:', error);
-        return Promise.reject(error);
-      }
-    }
-  }
+  const validTrackIds = await getValidTrackIds(tracks, validatedTrackIds, progressCallback, checkAbort )
 
   validTrackIds.forEach((trackId) => {
     existingUris.add(`spotify:track:${trackId}`);
@@ -200,3 +177,41 @@ const cleanupTitle = (title: string): string => {
 
   return title.replace(pattern, '').trim();
 };
+
+
+async function getValidTrackIds(tracks: Track[], validatedTrackIds: Map<string, ValidatedTrackEntry>, progressCallback: ProgressCallback, checkAbort: () => void): Promise<string[]> {
+   const validTrackIds = [];
+   progressCallback({ phase: `Validating track...`, percentage: 20 + (1 / tracks.length) * 30 });
+
+  for (let i = 0; i < tracks.length; i++) {
+    checkAbort();
+
+    const track = tracks[i];
+    const cachedEntry = validatedTrackIds.get(track.uri);
+
+    if (cachedEntry) {
+      validTrackIds.push(cachedEntry.id);
+      // Update the timestamp
+      addValidatedTrackId(track.uri, cachedEntry.id);
+    } else {
+      const searchForTrackIdWithLimit = limit(() => searchForTrackId(track));
+
+      try {
+        const validTrackId = await searchForTrackIdWithLimit;
+        if (validTrackId) {
+          validTrackIds.push(validTrackId);
+          addValidatedTrackId(track.uri, validTrackId);
+        } else {
+          console.warn(`No valid track ID found for track: ${track.name} by ${track.artists[0].name}`);
+        }
+      } catch (error) {
+        console.error('Error searching for track ID:', error);
+        return Promise.reject(error);
+      }
+    }
+    progressCallback({ phase: `${i + 1} out ${tracks.length} tracks valdiated.`, percentage: 20 + (i / tracks.length) * 30 });
+
+  }
+
+  return validTrackIds;
+}

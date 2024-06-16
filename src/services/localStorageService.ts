@@ -1,7 +1,7 @@
 const localStorageKey = 'validatedTrackIds';
 const MAX_ENTRIES = 10000; // Define the maximum number of entries to keep in local storage
 
-interface ValidatedTrackEntry {
+export interface ValidatedTrackEntry {
   id: string;
   timestamp: number;
 }
