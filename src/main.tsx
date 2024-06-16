@@ -5,17 +5,18 @@ import './index.css';
 import { AuthProvider, TAuthConfig, TRefreshTokenExpiredEvent } from 'react-oauth2-code-pkce';
 import { SCOPES } from './services/spotifyService';
 import { createRoot } from 'react-dom/client';
+import { ErrorBoundary } from 'react-error-boundary';
 
 const theme = createTheme();
 // Register service worker in your main js file
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/service-worker.js')
-  .then(function(registration) {
-    console.log('Service Worker registered with scope:', registration.scope);
-  })
-  .catch(function(err) {
-    console.log('Service Worker registration failed:', err);
-  });
+    .then(function (registration) {
+      console.log('Service Worker registered with scope:', registration.scope);
+    })
+    .catch(function (err) {
+      console.log('Service Worker registration failed:', err);
+    });
 }
 const authConfig: TAuthConfig = {
   autoLogin: false,
@@ -32,13 +33,24 @@ const authConfig: TAuthConfig = {
 }
 
 const container = document.getElementById('root');
-const root = createRoot(container!); 
+const root = createRoot(container!);
 root.render(
-  <React.StrictMode>
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <AuthProvider authConfig={authConfig}>
-        <App /> 
-      </AuthProvider>
-    </ThemeProvider>
-  </React.StrictMode>);
+  <ErrorBoundary onError={cleanup}>
+
+    <React.StrictMode>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <AuthProvider authConfig={authConfig}>
+          <App />
+        </AuthProvider>
+      </ThemeProvider>
+    </React.StrictMode>
+  </ErrorBoundary>);
+
+function cleanup(): void {
+  // in case there is an unrecoverable error, let's clear the local storage and refresh the app.
+  localStorage.clear();
+  sessionStorage.clear();
+  window.location.reload();
+}
+
