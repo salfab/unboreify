@@ -96,6 +96,7 @@ export const buildAlternativePlaylist = async (
       noise: 0,
     };
 
+    checkAbort();
     progressCallback({ phase: `Getting suggestions - step ${i / adjustedBatchSize + 1}`, percentage: 50 + (i / validTrackIds.length) * 50 });
 
     try {
@@ -152,6 +153,7 @@ export const buildAlternativePlaylist = async (
     }
   }
 
+  checkAbort();
   progressCallback({ phase: 'Completed', percentage: 100 });
   return alternativePlaylist;
 };
