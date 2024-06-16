@@ -172,7 +172,7 @@ export const addToQueue = async (token: string, uri: string, deviceId: string) =
 };
 
 export const getDevices = async (token: string) => {
-  const data = await getRequest<{ devices: any[] }>(`${BASE_URL}/me/player/devices`, token);
+  const data = await getRequest<{ devices: {id: string}[] }>(`${BASE_URL}/me/player/devices`, token);
   return data.devices;
 };
 
