@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef, useContext } from 'react';
-import { Button, Grid, Typography, Box, LinearProgress, Tooltip, IconButton, Collapse, Divider } from '@mui/material';
-import { AutoAwesome as AutoAwesomeIcon, Refresh as RefreshIcon, PlayArrow as PlayArrowIcon, AutoFixHigh as AutoFixHighIcon, AutoMode as AutoModeIcon } from '@mui/icons-material';
+import { Grid, Typography, Box, LinearProgress, Tooltip, IconButton, Collapse, Divider, ListItem, ListItemText, ListItemIcon, InputAdornment, TextField, List } from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
+import { AutoAwesome as AutoAwesomeIcon, Refresh as RefreshIcon, PlayArrow as PlayArrowIcon, AutoFixHigh as AutoFixHighIcon, AutoMode as AutoModeIcon, LibraryMusic as LibraryMusicIcon } from '@mui/icons-material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import useSpotifyApi from '../hooks/useSpotifyApi'; // Adjust the import path as needed
 import { buildAlternativePlaylist, trimPlaylistCyclesWithinQueue, ProgressCallback } from '../services/playlistService';
@@ -49,6 +50,11 @@ const QueuePage: React.FC = () => {
   const [showQueue, setShowQueue] = useState<boolean>(true);
   const [mode, setMode] = useState<'extend' | 'alternative'>('alternative');
   const [showProcessMessageBar, setShowProcessMessageBar] = useState<boolean>(false);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredPlaylists = playlists.filter((playlist) =>
+    playlist.name.toLowerCase().includes(searchTerm.toLowerCase())
+  ).sort((a, b) => a.name.localeCompare(b.name));
 
   // AbortController reference
   const abortController = useRef<AbortController | null>(null);
@@ -371,19 +377,55 @@ const QueuePage: React.FC = () => {
       </Grid>
       <Grid item xs={12}>
         <Typography variant="h4" gutterBottom>
-          User Playlists
+          Groove to These Playlists!
         </Typography>
-        <Box>
-          {playlists.map((playlist) => (
-            <Button key={playlist.id} variant="contained" onClick={() => {
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-              return fetchPlaylistTracks(playlist.id);
-            }} sx={{ marginRight: 1, marginBottom: 1 }}>
-              {playlist.name}
-            </Button>
+        <TextField
+
+          fullWidth
+          variant="outlined"
+          placeholder="Search Playlists"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+          }}
+          sx={{ marginBottom: 2, visibility: 'collapse', height: 0 }}
+        />
+        <List>
+          {filteredPlaylists.map((playlist) => (
+            <ListItem
+              key={playlist.id}
+              button
+              onClick={() => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return fetchPlaylistTracks(playlist.id);
+              }}
+              sx={{
+                padding: '8px 16px',
+                marginBottom: 1,
+                borderRadius: 1,
+                '&:hover': {
+                  backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                },
+              }}
+            >
+              <ListItemIcon>
+                <LibraryMusicIcon />
+              </ListItemIcon>
+              <ListItemText
+                primary={playlist.name}
+                secondary={`${playlist.description ? `${playlist.description} - ` : ''}${playlist.tracks.total} tracks`}
+              />
+            </ListItem>
           ))}
-        </Box>
+        </List>
       </Grid>
+
+
     </Grid>
   );
 };
