@@ -1,10 +1,10 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
 import App from './App';
 import { CssBaseline, ThemeProvider, createTheme } from '@mui/material';
 import './index.css';
 import { AuthProvider, TAuthConfig, TRefreshTokenExpiredEvent } from 'react-oauth2-code-pkce';
 import { SCOPES } from './services/spotifyService';
+import { createRoot } from 'react-dom/client';
 
 const theme = createTheme();
 // Register service worker in your main js file
@@ -31,8 +31,9 @@ const authConfig: TAuthConfig = {
   onRefreshTokenExpire: (event: TRefreshTokenExpiredEvent) => event.logIn(undefined, undefined, "popup"),
 }
 
-
-ReactDOM.render(
+const container = document.getElementById('root');
+const root = createRoot(container!); 
+root.render(
   <React.StrictMode>
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -40,6 +41,4 @@ ReactDOM.render(
         <App /> 
       </AuthProvider>
     </ThemeProvider>
-  </React.StrictMode>,
-  document.getElementById('root')
-);
+  </React.StrictMode>);
