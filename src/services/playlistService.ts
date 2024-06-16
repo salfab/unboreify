@@ -209,7 +209,7 @@ async function getValidTrackIds(tracks: Track[], validatedTrackIds: Map<string, 
         return Promise.reject(error);
       }
     }
-    progressCallback({ phase: `${i + 1} out ${tracks.length} tracks valdiated.`, percentage: 20 + (i / tracks.length) * 30 });
+    progressCallback({ phase: `${validTrackIds.length} out ${tracks.length} tracks valdiated.`, percentage: 20 + (i / tracks.length) * 30 });
 
   }
 
