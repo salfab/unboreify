@@ -13,7 +13,8 @@ export type ProgressCallback = (progress: { phase: string; percentage: number })
  */
 const searchForTrackId = async (track: Track): Promise<string | null> => {
   const searchTerm = `${track.artists[0].name} ${track.name}`;
-  const searchResponse = await searchTrack(searchTerm);
+  const cleanSearchTerm = cleanupTitle(searchTerm)
+  const searchResponse = await searchTrack(cleanSearchTerm);
   const foundTrack = searchResponse.find(item => item.track_id === track.uri.split(':')[2]);
   return foundTrack ? foundTrack.track_id : (searchResponse[0]?.track_id || null);
 };
@@ -171,4 +172,29 @@ export const trimPlaylistCyclesWithinQueue = (queueTracks: Track[], playlistTrac
   }
   // No match found, return the original queue
   return queueTracks;
+};
+
+const cleanupTitle = (title: string): string => {
+  const pattern: RegExp = new RegExp(
+      [
+          "(\\s*-\\s*Remastered\\s*\\d{4})",
+          "(\\s*\\(Remastered\\s*\\d{4}\\))",
+          "(\\s*\\[.*? Edition\\])",
+          "(\\s*-\\s*.*? Edition)",
+          "(\\s*\\(.*? Edition\\))",
+          "(\\s*-\\s*\\d{4}\\s*Remaster)",
+          "(\\s*-\\s*Anniversary Edition)",
+          "(\\s*\\(Expanded Edition\\))",
+          "(\\s*-\\s*Expanded Edition)",
+          "(\\s*-\\s*Deluxe Edition)",
+          "(\\s*\\(Deluxe Edition\\))",
+          "(\\s*\\(.*? Version\\))",
+          "(\\s*-\\s*.*? Version)",
+          "(\\s*-\\s*Radio Edit)",
+          "(\\s*\\(Radio Edit\\))"
+      ].join("|"),
+      "g"
+  );
+
+  return title.replace(pattern, '').trim();
 };
