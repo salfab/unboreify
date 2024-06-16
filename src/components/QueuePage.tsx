@@ -134,7 +134,7 @@ const QueuePage: React.FC = () => {
       console.error(error);
       throw error;
     }
-  }, [alternativePlaylist, fetchQueue, getPlaybackState, startPlayback]);
+  }, [alternativePlaylist, fetchQueue, getDevices, getPlaybackState, startPlayback]);
 
   const handleEnhanceClick = () => {
     setSourceTracks(alternativePlaylist);
