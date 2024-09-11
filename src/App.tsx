@@ -14,6 +14,7 @@ import { IAuthContext, AuthContext } from 'react-oauth2-code-pkce';
 import useSpotifyApi from './hooks/useSpotifyApi';
 import Settings from './components/Settings';
 import { getPlaylistMultiplier } from './services/localStorageService';
+import FestivalPage from './components/FestivalPage';
 
 const App: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -139,6 +140,7 @@ const App: React.FC = () => {
           <Routes>
             <Route path="/queue" element={<QueuePage />} />
             <Route path="/callback" element={<QueuePage />} />
+            <Route path="/itfwi" element={<FestivalPage />} />
             <Route path="/" element={<HomePage />} /> {/* Placeholder for Home or other components */}
           </Routes>
         </Container>

@@ -75,6 +75,10 @@ const useSpotifyApi = () => {
     return spotifyService.getTrackDetails(trackId, token);
   }, [token]);
 
+  const getArtistId = useCallback((artistName: string) => {
+    return spotifyService.getArtistId(token, artistName);
+  }, [token]);
+
   return {
     getCurrentTrack,
     getUserPlaylists,
@@ -85,6 +89,7 @@ const useSpotifyApi = () => {
     getQueue,
     getCurrentUser,
     getArtistTopTracks,
+    getArtistId,
     getRecentlyPlayedTracks,
     skipToNextTrack,
     startPlayback,
