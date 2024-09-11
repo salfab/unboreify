@@ -196,7 +196,6 @@ export const getArtistTopTracks = async (token: string, artistId: string) => {
  */
 export const getArtistId = async (token: string, artistName: string): Promise<string | null> => {
   try {
-    debugger;
     const data = await getRequest<{ artists: { items: { id: string }[] } }>(
       `${BASE_URL}/search?q=${encodeURIComponent(artistName)}&type=artist&limit=1`, 
       token
