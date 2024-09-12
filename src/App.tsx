@@ -101,6 +101,9 @@ const App: React.FC = () => {
                   <Button color="inherit" component={Link} to="/queue">
                     View Queues
                   </Button>
+                  <Button color="inherit" component={Link} to="/festiclub">
+                    FestiClub
+                  </Button>
                   <IconButton color="inherit" onClick={handleMenu}>
                     <Avatar alt={currentUser?.display_name} src={currentUser?.images[0]?.url} />
                   </IconButton>
@@ -140,7 +143,7 @@ const App: React.FC = () => {
           <Routes>
             <Route path="/queue" element={<QueuePage />} />
             <Route path="/callback" element={<QueuePage />} />
-            <Route path="/itfwi" element={<FestivalPage />} />
+            <Route path="/festiclub" element={<FestivalPage />} />
             <Route path="/" element={<HomePage />} /> {/* Placeholder for Home or other components */}
           </Routes>
         </Container>

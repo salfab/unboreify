@@ -1,8 +1,7 @@
 import React, { FC, useEffect, useState } from "react";
-import { Button, Typography, Grid, Box, TextField } from "@mui/material";
-import { useNavigate } from "react-router-dom";
+import { Button, Typography, Box, TextField, Divider } from "@mui/material";
+import { useLocation, useNavigate } from "react-router-dom";
 import useSpotifyApi from "../hooks/useSpotifyApi";
-import { useCallback } from "react";
 
 interface FestivalPageProps {
   // Define any other props you need
@@ -15,14 +14,17 @@ interface Track {
   album: {
     images: { url: string }[];
   };
+  artists: { name: string }[]; // Ensure that track objects contain the artist information
 }
 
 const FestivalPage: FC<FestivalPageProps> = () => {
   const { getArtistTopTracks, getArtistId, getDevices, startPlayback } = useSpotifyApi();
-  const [artistInput, setArtistInput] = useState<string[]>([]);
-  const [topTracks, setTopTracks] = useState<any[]>([]);
+  const [artistInput, setArtistInput] = useState<string>('');
+  const [artistsList, setArtistsList] = useState<string[]>([]);
+  const [topTracks, setTopTracks] = useState<Track[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  
+  const navigate = useNavigate();
+
   useEffect(() => {
     const fetchTopTracks = async () => {
       setIsLoading(true);
@@ -35,8 +37,15 @@ const FestivalPage: FC<FestivalPageProps> = () => {
           const artistId = await getArtistId(artistName); // Get artist ID
           if (artistId) {
             const tracks = await getArtistTopTracks(artistId); // Fetch top tracks
-            trackList.push(...tracks);
-            console.log(`Fetched top tracks for ${artistName}`, tracks.map(track => track.name));
+
+            // Filter tracks to only include those where the primary artist matches the search term (case-insensitive)
+            const filteredTracks = tracks;
+            // tracks.filter(track => 
+            //   track.artists[0].name.toLowerCase() === artistName.toLowerCase()
+            // );
+
+            trackList.push(...filteredTracks);
+            console.log(`Fetched and filtered top tracks for ${artistName}`, filteredTracks.map(track => track.name));
           }
         }
         
@@ -48,46 +57,34 @@ const FestivalPage: FC<FestivalPageProps> = () => {
       }
     };
     fetchTopTracks();
-}    , [artistInput]);
+  }, [artistsList, getArtistId, getArtistTopTracks]);
 
-  const navigate = useNavigate();
+  const {search} = useLocation();
 
   useEffect(() => {
     // Get the artist names from the query string
-    const artistNames = new URLSearchParams(window.location.search).get('artist')?.split(',') ?? [];
-    setArtistInput(artistNames); // Initialize the input box with artist names
-  }, []);
+    const artistNames = new URLSearchParams(search).get('artist')?.split(',') ?? [];
+    setArtistsList(artistNames); // Initialize the input box with artist names
+    setArtistInput(artistNames.join('\n')); // Initialize the input box with artist names
+  }, [search]);
 
   const handleInputChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     // Update the artistInput state with the changed text area content
-    setArtistInput(event.target.value.split('\n'));
+    setArtistInput(event.target.value);
   };
 
   const handleNavigate = () => {
+    const artistsList = artistInput.split('\n');
     // Concatenate the input lines into a comma-separated string
-    const concatenatedArtists = artistInput.join(',');
+    const concatenatedArtists = artistsList.join(',');
     // Navigate to /itfwi with the concatenated artist names as a query parameter
-    navigate(`/itfwi?artist=${encodeURIComponent(concatenatedArtists)}`);
+    navigate(`/festiclub?artist=${encodeURIComponent(concatenatedArtists)}`);
+    setArtistsList(artistsList ?? []); // Initialize the input box with artist names
+
+
   };
 
-//   const handlePlayOnSpotify = useCallback(async () => {
-//     try {
-//       const playbackState = await getPlaybackState();
-//       const deviceId = playbackState.device?.id ?? (await getDevices())[0].id;
-
-//       const uris = topTracks.map(track => track.uri as string);
-//       const result = await (uris, deviceId);
-//       console.log(result);
-//       //setShowProcessMessageBar(false)
-//     //   setTimeout(async () => {
-//     //     fetchQueue(false);
-//     //   }, 1000);
-//     } catch (error) {
-//       console.error(error);
-//       throw error;
-//     }
-//   }, [alternativePlaylist, fetchQueue, getDevices, getPlaybackState, startPlayback]);
-const handlePlayAllTracks = async () => {
+  const handlePlayAllTracks = async () => {
     try {
       const uris = topTracks.map(track => track.uri);
       const devices = await getDevices();
@@ -103,16 +100,20 @@ const handlePlayAllTracks = async () => {
 
   return (
     <Box sx={{ padding: 2 }}>
-      <Typography variant="h4" gutterBottom>
-        Festival Artist Top Tracks
+      {/* Page Title and Subtitle */}
+      <Typography variant="h3" gutterBottom>
+        Festiclub
+      </Typography>
+      <Typography variant="subtitle1" gutterBottom>
+        Is this festival/club worth it?
       </Typography>
 
       {/* Multiline TextField for Artist Names */}
       <TextField
         label="Artists"
         multiline
-        rows={artistInput.length || 3} // Show enough rows for the input or default to 3
-        value={artistInput.join('\n')} // Display each artist on a new line
+        rows={artistsList.length || 3} // Show enough rows for the input or default to 3
+        value={artistInput} // Display each artist on a new line
         onChange={handleInputChange} // Update state on input change
         fullWidth
         sx={{ marginBottom: 2 }}
@@ -123,23 +124,45 @@ const handlePlayAllTracks = async () => {
         variant="contained"
         color="primary"
         onClick={handleNavigate}
+        sx={{ marginBottom: 2 }}
       >
-        Go to ITFWI with Artists
+        Go to FestiClub with these Artists
       </Button>
 
       {isLoading ? (
         <Typography variant="body1">Loading top tracks...</Typography>
       ) : (
-        <Grid container spacing={2}>
-          {topTracks.map(track => (
-            <Grid item xs={12} sm={6} md={4} key={track.id}>
-              <Box display="flex" alignItems="center">
-                <img src={track.album.images[0]?.url} alt={track.name} style={{ width: 50, height: 50, marginRight: 10 }} />
-                <Typography variant="body1">{track.name}</Typography>
-              </Box>
-            </Grid>
-          ))}
-        </Grid>
+        <Box>
+          {/* Render Top Tracks */}
+          {topTracks.length > 0 && (
+            <>
+              {topTracks.reduce((acc: JSX.Element[], track, index) => {
+                const prevTrack = topTracks[index - 1];
+                const isNewArtist = !prevTrack || prevTrack.artists[0].name !== track.artists[0].name;
+
+                if (isNewArtist) {
+                  acc.push(
+                    <React.Fragment key={`divider-${track.artists[0].name}`}>
+                      {index > 0 && <Divider sx={{ marginY: 2 }} />} {/* Add a divider between different artists */}
+                      <Typography variant="h5" gutterBottom>
+                        {track.artists[0].name} {/* Display artist name */}
+                      </Typography>
+                    </React.Fragment>
+                  );
+                }
+
+                acc.push(
+                  <Box display="flex" alignItems="center" key={track.id} sx={{ marginBottom: 1 }}>
+                    <img src={track.album.images[0]?.url} alt={track.name} style={{ width: 50, height: 50, marginRight: 10 }} />
+                    <Typography variant="body1">{track.name}</Typography>
+                  </Box>
+                );
+
+                return acc;
+              }, [])}
+            </>
+          )}
+        </Box>
       )}
 
       {topTracks.length > 0 && (
@@ -148,7 +171,6 @@ const handlePlayAllTracks = async () => {
             variant="contained"
             color="primary"
             onClick={handlePlayAllTracks}
-           //  startIcon={<PlayArrowIcon />}
           >
             Play All Tracks on Spotify
           </Button>
