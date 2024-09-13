@@ -96,7 +96,6 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
     // Fetch setlists for the selected artist
     try {
       const setsList = await getLastSetsByArtist(artist.mbid);
-      debugger
       setSetlists(setsList);
     } catch (error) {
       console.error('Error fetching setlists:', error);
@@ -175,7 +174,6 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
           <InputLabel>Select Setlist</InputLabel>
           <Select value={selectedSetlist?.id || ''} onChange={handleSetlistSelect}>
             {setlists.map((setlist) => {
-              debugger
               return (
                 <MenuItem key={setlist.id} value={setlist.id}>
                   {setlist.venue.name} - {setlist.eventDate} ({setlist.sets.set.flatMap(s => s.song).length} tracks)
