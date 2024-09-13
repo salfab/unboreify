@@ -1,7 +1,8 @@
-import React, { FC, useState } from "react";
-import { Button, Typography, Box, TextField, CircularProgress } from "@mui/material";
-import { CheckCircle as CheckCircleIcon, Cancel as CancelIcon } from '@mui/icons-material';
+import React, { FC, useCallback, useState } from "react";
+import { Button, Typography, Box, TextField, CircularProgress, Avatar } from "@mui/material";
+import { CheckCircle as CheckCircleIcon, Cancel as CancelIcon, Lightbulb as LightBulbIcon } from '@mui/icons-material'; // Import LightBulbIcon for approximations
 import useSpotifyApi from "../hooks/useSpotifyApi";
+import { getLastSetsByArtist, searchArtistByName } from "../services/setlistFmService";
 
 interface Track {
   id: string;
@@ -18,11 +19,11 @@ interface ConcertSetlistPageProps {
 }
 
 const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
-  const { searchTracks, } = useSpotifyApi(); 
+  const { searchTracks } = useSpotifyApi(); 
   const [artistName, setArtistName] = useState<string>('');
   const [setlistInput, setSetlistInput] = useState<string>('');
   const [setlist, setSetlist] = useState<string[]>([]);
-  const [trackStatuses, setTrackStatuses] = useState<{ song: string; status: 'loading' | 'success' | 'failure'; track?: Track }[]>([]);
+  const [trackStatuses, setTrackStatuses] = useState<{ song: string; status: 'loading' | 'success' | 'failure' | 'approximation'; track?: Track }[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const handleArtistNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -41,18 +42,21 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
     // Initialize track statuses to 'loading'
     setTrackStatuses(songList.map(song => ({ song, status: 'loading' })));
 
-    const fetchedTracks: { song: string; status: 'success' | 'failure'; track?: Track }[] = [];
+    const fetchedTracks: { song: string; status: 'success' | 'failure' | 'approximation'; track?: Track }[] = [];
 
     for (const song of songList) {
       try {
-        // Search the song on Spotify, prefer the version from the typed artist
+        // Search the song on Spotify by the song title
         const results = await searchTracks(song);
 
-        // TODO : if no track by that artist is available, take the first one instead of failing
-        const preferredTrack = results.find(track => track.artists[0].name.toLowerCase() === artistName.toLowerCase());
+        let preferredTrack = results.find(track => track.artists[0].name.toLowerCase() === artistName.toLowerCase());
 
         if (preferredTrack) {
           fetchedTracks.push({ song, status: 'success', track: preferredTrack });
+        } else if (results.length > 0) {
+          // If no exact match by artist, take the first track as an approximation
+          preferredTrack = results[0];
+          fetchedTracks.push({ song, status: 'approximation', track: preferredTrack });
         } else {
           fetchedTracks.push({ song, status: 'failure' });
         }
@@ -65,6 +69,18 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
     setIsLoading(false);
   };
 
+  const handleFetchSetlist = useCallback(async () => {
+    // Fetch setlist from the API
+    const artists = await searchArtistByName(artistName);
+    const matchingArtist = artists.find(a => a.name.toLowerCase() === artistName.toLowerCase());
+    if (!matchingArtist) {
+      console.error('Artist not found');
+      throw new Error('Artist not found');
+    }
+    const setsList = await getLastSetsByArtist(matchingArtist.mbid);
+    console.log(setsList);
+  }, [artistName]);
+    
   return (
     <Box sx={{ padding: 2 }}>
       <Typography variant="h4" gutterBottom>
@@ -78,6 +94,9 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
         fullWidth
         sx={{ marginBottom: 2 }}
       />
+      <Button variant="contained" color="primary" sx={{ marginBottom: 2 }} onClick={handleFetchSetlist}>
+        Fetch Setlist
+        </Button>
 
       <TextField
         label="Setlist (One song per line)"
@@ -102,12 +121,25 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
       <Box mt={4}>
         {trackStatuses.map((status, index) => (
           <Box key={index} display="flex" alignItems="center" sx={{ marginBottom: 1 }}>
-            <Typography variant="body1" sx={{ marginRight: 2 }}>
-              {status.song}
-            </Typography>
-            {status.status === 'loading' && <CircularProgress size={20} />}
-            {status.status === 'success' && <CheckCircleIcon color="success" />}
-            {status.status === 'failure' && <CancelIcon color="error" />}
+            <Avatar 
+              alt={status.track?.name} 
+              src={status.track?.album.images[0]?.url} 
+              sx={{ marginRight: 2, width: 40, height: 40 }} 
+            />
+            <Box>
+              <Typography variant="body1">
+                {status.song}
+              </Typography>
+              <Typography variant="body2" color="textSecondary">
+                {status.track?.artists.map(artist => artist.name).join(', ')}
+              </Typography>
+            </Box>
+            <Box sx={{ marginLeft: 'auto' }}>
+              {status.status === 'loading' && <CircularProgress size={20} />}
+              {status.status === 'success' && <CheckCircleIcon color="success" />}
+              {status.status === 'failure' && <CancelIcon color="error" />}
+              {status.status === 'approximation' && <LightBulbIcon color="warning" />} {/* Use LightBulbIcon for approximations */}
+            </Box>
           </Box>
         ))}
       </Box>
