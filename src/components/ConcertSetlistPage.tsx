@@ -1,4 +1,4 @@
-import React, { FC, useCallback, useState } from "react";
+import React, { FC, useCallback, useState, useEffect } from "react";
 import { Button, Typography, Box, TextField, CircularProgress, Avatar, Autocomplete, Select, MenuItem, FormControl, InputLabel } from "@mui/material";
 import { CheckCircle as CheckCircleIcon, Cancel as CancelIcon, Lightbulb as LightBulbIcon } from '@mui/icons-material';
 import { debounce } from 'lodash';
@@ -61,15 +61,16 @@ interface ConcertSetlistPageProps {
 
 const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
   const { searchTracks, startPlayback, getDevices } = useSpotifyApi();
-  const [artistName, setArtistName] = useState<string>('');
+  const [artistName, setArtistName] = useState<string>('');  // Store typed artist name
   const [artists, setArtists] = useState<Artist[]>([]);
-  const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null); 
+  const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null);  // Artist from the autocomplete selection
   const [setlists, setSetlists] = useState<Setlist[]>([]);
   const [selectedSetlist, setSelectedSetlist] = useState<Setlist | null>(null);
   const [setlistInput, setSetlistInput] = useState<string>(''); 
   const [trackStatuses, setTrackStatuses] = useState<{ song: string; status: 'loading' | 'success' | 'failure' | 'approximation'; track?: Track }[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isTracksReady, setIsTracksReady] = useState<boolean>(false); // To show "Queue All Tracks" button
+  const [originalTrackList, setOriginalTrackList] = useState<string[]>([]); // Store fetched track names to compare
 
   const handleSetlistChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     setSetlistInput(event.target.value); // Allow manual modification of tracks
@@ -91,21 +92,23 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
 
   // Handle artist selection from autocomplete
   const handleArtistSelect = async (event: any, artist: Artist | null) => {
-    if (!artist) return;
     setSelectedArtist(artist);
 
     // Fetch setlists for the selected artist
-    try {
-      const setsList = await getLastSetsByArtist(artist.mbid);
-      setSetlists(setsList);
-    } catch (error) {
-      console.error('Error fetching setlists:', error);
+    if (artist) {
+      try {
+        const setsList = await getLastSetsByArtist(artist.mbid);
+        setSetlists(setsList);
+      } catch (error) {
+        console.error('Error fetching setlists:', error);
+      }
     }
   };
 
   // Handle input changes for typing only (not selection)
   const handleInputChange = (event: any, value: string, reason: string) => {
     if (reason === 'input') {
+      setArtistName(value);  // Capture the typed artist name
       fetchArtists(value); 
     }
   };
@@ -116,16 +119,18 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
     setSelectedSetlist(selectedSet || null);
 
     if (selectedSet) {
-      const trackNames = selectedSet.sets.set.flatMap(s => s.song.map(song => song.name)).join('\n');
-      setSetlistInput(trackNames); // Populate the track list input automatically
-      await handleMakePlaylist(trackNames.split('\n').filter(song => song.trim() !== ''));
+      const trackNames = selectedSet.sets.set.flatMap(s => s.song.map(song => song.name));
+      setOriginalTrackList(trackNames); // Store the original fetched track list for comparison
+      setSetlistInput(trackNames.join('\n')); // Populate the track list input automatically
+      await handleMakePlaylist(trackNames);
     }
   };
 
   // Helper function to perform a secondary search with the artist name
   const performFallbackSearch = async (song: string): Promise<Track | null> => {
     try {
-      const fallbackResults = await searchTracks(`${selectedArtist?.name} - ${song}`);
+      const artistToUse = selectedArtist ? selectedArtist.name : artistName; // Fallback to typed artist name if no artist selected
+      const fallbackResults = await searchTracks(`${artistToUse} - ${song}`);
       return fallbackResults.find(track => track.name.toLowerCase() === song.toLowerCase()) || null;
     } catch (error) {
       console.error('Error performing fallback search:', error);
@@ -133,7 +138,7 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
     }
   };
 
-  // Fetch and build the playlist for the setlist
+  // Fetch and build the playlist for the setlist or manual input
   const handleMakePlaylist = async (songList: string[]) => {
     setIsLoading(true);
     setTrackStatuses(songList.map(song => ({ song, status: 'loading' })));
@@ -142,8 +147,9 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
 
     for (const song of songList) {
       try {
+        const artistToUse = selectedArtist ? selectedArtist.name : artistName;  // Fallback to typed artist name if not selected
         const results = await searchTracks(song);
-        const preferredTrack = results.find(track => track.artists[0].name.toLowerCase() === selectedArtist?.name.toLowerCase());
+        const preferredTrack = results.find(track => track.artists[0].name.toLowerCase() === artistToUse.toLowerCase());
 
         // If no exact match by artist is found, do a fallback search with the artist name
         if (!preferredTrack) {
@@ -166,6 +172,12 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
     setIsLoading(false);
     setIsTracksReady(fetchedTracks.every(track => track.status === 'success' || track.status === 'approximation'));
   };
+
+  // Check if the input has been modified compared to the original fetched track list
+  const isModified = useCallback(() => {
+    const currentTracks = setlistInput.split('\n').map(track => track.trim()).filter(Boolean);
+    return JSON.stringify(currentTracks) !== JSON.stringify(originalTrackList);
+  }, [setlistInput, originalTrackList]);
 
   // Manually queue tracks from the input box
   const handleQueueTracksManually = async () => {
@@ -234,15 +246,15 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
         sx={{ marginBottom: 2 }}
       />
 
-      {/* Manually Queue Tracks Button */}
+      {/* Manually Build Setlist Button */}
       <Button
         variant="contained"
         color="secondary"
         onClick={handleQueueTracksManually}
-        disabled={isLoading || !setlistInput.trim()}
+        disabled={isLoading || !setlistInput.trim() || !isModified()} // Only enabled if modified
         sx={{ marginBottom: 2 }}
       >
-        Build my Set List
+        Build My Setlist
       </Button>
 
       {/* Display track fetching statuses */}
