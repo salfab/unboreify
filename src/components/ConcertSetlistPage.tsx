@@ -70,9 +70,9 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
   const [trackStatuses, setTrackStatuses] = useState<{ song: string; status: 'loading' | 'success' | 'failure' | 'approximation'; track?: Track }[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isTracksReady, setIsTracksReady] = useState<boolean>(false); // To show "Queue All Tracks" button
-  
+
   const handleSetlistChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setSetlistInput(event.target.value);
+    setSetlistInput(event.target.value); // Allow manual modification of tracks
   };
 
   // Debounced function to search artists after 0.5 second of inactivity
@@ -117,9 +117,7 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
 
     if (selectedSet) {
       const trackNames = selectedSet.sets.set.flatMap(s => s.song.map(song => song.name)).join('\n');
-      setSetlistInput(trackNames); 
-
-      // Automatically fetch tracks as soon as the setlist is selected
+      setSetlistInput(trackNames); // Populate the track list input automatically
       await handleMakePlaylist(trackNames.split('\n').filter(song => song.trim() !== ''));
     }
   };
@@ -144,15 +142,15 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
 
     for (const song of songList) {
       try {
-        // Initial search for the track
         const results = await searchTracks(song);
-        let preferredTrack = results.find(track => track.artists[0].name.toLowerCase() === selectedArtist?.name.toLowerCase());
+        const preferredTrack = results.find(track => track.artists[0].name.toLowerCase() === selectedArtist?.name.toLowerCase());
 
         // If no exact match by artist is found, do a fallback search with the artist name
         if (!preferredTrack) {
-          preferredTrack = await performFallbackSearch(song);
-          if (preferredTrack) {
-            fetchedTracks.push({ song, status: 'approximation', track: preferredTrack });
+          const fallbackTrack = await performFallbackSearch(song);
+          if (fallbackTrack) {
+            // Mark as success if the fallback search found an exact match
+            fetchedTracks.push({ song, status: 'success', track: fallbackTrack });
           } else {
             fetchedTracks.push({ song, status: 'failure' });
           }
@@ -167,6 +165,12 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
     setTrackStatuses(fetchedTracks);
     setIsLoading(false);
     setIsTracksReady(fetchedTracks.every(track => track.status === 'success' || track.status === 'approximation'));
+  };
+
+  // Manually queue tracks from the input box
+  const handleQueueTracksManually = async () => {
+    const trackNames = setlistInput.split('\n').filter(song => song.trim() !== '');
+    await handleMakePlaylist(trackNames);
   };
 
   // Function to queue all tracks to Spotify
@@ -219,7 +223,7 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
         </FormControl>
       )}
 
-      {/* Setlist (automatically populated when setlist is selected) */}
+      {/* Setlist (editable for manual modification) */}
       <TextField
         label="Setlist (One song per line)"
         multiline
@@ -229,6 +233,17 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
         fullWidth
         sx={{ marginBottom: 2 }}
       />
+
+      {/* Manually Queue Tracks Button */}
+      <Button
+        variant="contained"
+        color="secondary"
+        onClick={handleQueueTracksManually}
+        disabled={isLoading || !setlistInput.trim()}
+        sx={{ marginBottom: 2 }}
+      >
+        Build my Set List
+      </Button>
 
       {/* Display track fetching statuses */}
       <Box mt={4}>
