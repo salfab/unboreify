@@ -1,4 +1,4 @@
-import React, { FC, useCallback, useEffect, useState } from "react";
+import React, { FC, useCallback, useState } from "react";
 import { Button, Typography, Box, TextField, CircularProgress, Avatar, Autocomplete, Select, MenuItem, FormControl, InputLabel } from "@mui/material";
 import { CheckCircle as CheckCircleIcon, Cancel as CancelIcon, Lightbulb as LightBulbIcon } from '@mui/icons-material';
 import { debounce } from 'lodash';
@@ -124,6 +124,17 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
     }
   };
 
+  // Helper function to perform a secondary search with the artist name
+  const performFallbackSearch = async (song: string): Promise<Track | null> => {
+    try {
+      const fallbackResults = await searchTracks(`${selectedArtist?.name} - ${song}`);
+      return fallbackResults.find(track => track.name.toLowerCase() === song.toLowerCase()) || null;
+    } catch (error) {
+      console.error('Error performing fallback search:', error);
+      return null;
+    }
+  };
+
   // Fetch and build the playlist for the setlist
   const handleMakePlaylist = async (songList: string[]) => {
     setIsLoading(true);
@@ -133,16 +144,20 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
 
     for (const song of songList) {
       try {
+        // Initial search for the track
         const results = await searchTracks(song);
         let preferredTrack = results.find(track => track.artists[0].name.toLowerCase() === selectedArtist?.name.toLowerCase());
 
-        if (preferredTrack) {
-          fetchedTracks.push({ song, status: 'success', track: preferredTrack });
-        } else if (results.length > 0) {
-          preferredTrack = results[0];
-          fetchedTracks.push({ song, status: 'approximation', track: preferredTrack });
+        // If no exact match by artist is found, do a fallback search with the artist name
+        if (!preferredTrack) {
+          preferredTrack = await performFallbackSearch(song);
+          if (preferredTrack) {
+            fetchedTracks.push({ song, status: 'approximation', track: preferredTrack });
+          } else {
+            fetchedTracks.push({ song, status: 'failure' });
+          }
         } else {
-          fetchedTracks.push({ song, status: 'failure' });
+          fetchedTracks.push({ song, status: 'success', track: preferredTrack });
         }
       } catch (error) {
         fetchedTracks.push({ song, status: 'failure' });
