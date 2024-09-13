@@ -1,6 +1,6 @@
-import React, { FC, useCallback, useState } from "react";
+import React, { FC, useCallback, useEffect, useState } from "react";
 import { Button, Typography, Box, TextField, CircularProgress, Avatar, Autocomplete, Select, MenuItem, FormControl, InputLabel } from "@mui/material";
-import { CheckCircle as CheckCircleIcon, Cancel as CancelIcon, Lightbulb as LightBulbIcon } from '@mui/icons-material'; 
+import { CheckCircle as CheckCircleIcon, Cancel as CancelIcon, Lightbulb as LightBulbIcon } from '@mui/icons-material';
 import { debounce } from 'lodash';
 import useSpotifyApi from "../hooks/useSpotifyApi";
 import { getLastSetsByArtist, searchArtistByName } from "../services/setlistFmService";
@@ -30,6 +30,7 @@ interface Song {
     disambiguation?: string;
     url: string;
   };
+  info?: string;
 }
 
 interface Set {
@@ -38,6 +39,7 @@ interface Set {
 
 interface Setlist {
   id: string;
+  versionId: string;
   eventDate: string;
   venue: {
     name: string;
@@ -58,16 +60,16 @@ interface ConcertSetlistPageProps {
 }
 
 const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
-  const { searchTracks } = useSpotifyApi(); 
+  const { searchTracks, startPlayback, getDevices } = useSpotifyApi();
   const [artistName, setArtistName] = useState<string>('');
   const [artists, setArtists] = useState<Artist[]>([]);
-  const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null); // Store selected artist object
+  const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null); 
   const [setlists, setSetlists] = useState<Setlist[]>([]);
   const [selectedSetlist, setSelectedSetlist] = useState<Setlist | null>(null);
-  const [setlistInput, setSetlistInput] = useState<string>(''); // Store user input setlist
+  const [setlistInput, setSetlistInput] = useState<string>(''); 
   const [trackStatuses, setTrackStatuses] = useState<{ song: string; status: 'loading' | 'success' | 'failure' | 'approximation'; track?: Track }[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [inputChanged, setInputChanged] = useState<boolean>(false); // Track if input has changed
+  const [isTracksReady, setIsTracksReady] = useState<boolean>(false); // To show "Queue All Tracks" button
   
   const handleSetlistChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     setSetlistInput(event.target.value);
@@ -91,7 +93,6 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
   const handleArtistSelect = async (event: any, artist: Artist | null) => {
     if (!artist) return;
     setSelectedArtist(artist);
-    setInputChanged(false); // Reset input change tracking
 
     // Fetch setlists for the selected artist
     try {
@@ -105,25 +106,27 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
   // Handle input changes for typing only (not selection)
   const handleInputChange = (event: any, value: string, reason: string) => {
     if (reason === 'input') {
-      setInputChanged(true);
-      fetchArtists(value); // Only trigger fetch if typing, not selection
+      fetchArtists(value); 
     }
   };
 
-  // Handle setlist selection and populate setlist input with track names
-  const handleSetlistSelect = (event: React.ChangeEvent<{ value: unknown }>) => {
+  // Automatically fetch tracks when setlist is selected
+  const handleSetlistSelect = async (event: React.ChangeEvent<{ value: unknown }>) => {
     const selectedSet = setlists.find(set => set.id === event.target.value);
     setSelectedSetlist(selectedSet || null);
 
     if (selectedSet) {
       const trackNames = selectedSet.sets.set.flatMap(s => s.song.map(song => song.name)).join('\n');
-      setSetlistInput(trackNames); // Populate the input field with tracks
+      setSetlistInput(trackNames); 
+
+      // Automatically fetch tracks as soon as the setlist is selected
+      await handleMakePlaylist(trackNames.split('\n').filter(song => song.trim() !== ''));
     }
   };
 
-  const handleMakePlaylist = async () => {
+  // Fetch and build the playlist for the setlist
+  const handleMakePlaylist = async (songList: string[]) => {
     setIsLoading(true);
-    const songList = setlistInput.split('\n').filter(song => song.trim() !== '');
     setTrackStatuses(songList.map(song => ({ song, status: 'loading' })));
 
     const fetchedTracks: { song: string; status: 'success' | 'failure' | 'approximation'; track?: Track }[] = [];
@@ -148,6 +151,25 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
 
     setTrackStatuses(fetchedTracks);
     setIsLoading(false);
+    setIsTracksReady(fetchedTracks.every(track => track.status === 'success' || track.status === 'approximation'));
+  };
+
+  // Function to queue all tracks to Spotify
+  const handleQueueAllTracks = async () => {
+    try {
+      const uris = trackStatuses
+        .filter(status => status.status === 'success' || status.status === 'approximation')
+        .map(status => status.track?.uri);
+
+      const devices = await getDevices();
+      const deviceId = devices[0]?.id; // Select the first available device
+
+      if (deviceId && uris.length > 0) {
+        await startPlayback(uris as string[], deviceId);
+      }
+    } catch (error) {
+      console.error('Error starting playback:', error);
+    }
   };
 
   return (
@@ -161,10 +183,10 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
         freeSolo
         options={artists}
         getOptionLabel={(option) => option.disambiguation ? `${option.name} (${option.disambiguation})` : option.name}
-        onInputChange={handleInputChange} // Fetch artists with debounce only when typing
-        onChange={handleArtistSelect} // Handle artist selection
+        onInputChange={handleInputChange} 
+        onChange={handleArtistSelect} 
         renderInput={(params) => <TextField {...params} label="Search Artist" fullWidth />}
-        isOptionEqualToValue={(option, value) => option.mbid === value.mbid} // Ensures correct matching
+        isOptionEqualToValue={(option, value) => option.mbid === value.mbid} 
         sx={{ marginBottom: 2 }}
       />
 
@@ -173,13 +195,11 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
         <FormControl fullWidth sx={{ marginBottom: 2 }}>
           <InputLabel>Select Setlist</InputLabel>
           <Select value={selectedSetlist?.id || ''} onChange={handleSetlistSelect}>
-            {setlists.map((setlist) => {
-              return (
-                <MenuItem key={setlist.id} value={setlist.id}>
-                  {setlist.venue.name} - {setlist.eventDate} ({setlist.sets.set.flatMap(s => s.song).length} tracks)
-                </MenuItem>
-              );
-            })}
+            {setlists.map((setlist) => (
+              <MenuItem key={setlist.id} value={setlist.id}>
+                {setlist.venue.name} - {setlist.eventDate} ({setlist.sets.set.flatMap(s => s.song).length} tracks)
+              </MenuItem>
+            ))}
           </Select>
         </FormControl>
       )}
@@ -194,15 +214,6 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
         fullWidth
         sx={{ marginBottom: 2 }}
       />
-
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={handleMakePlaylist}
-        disabled={isLoading || !selectedArtist || !setlistInput.trim()}
-      >
-        Make a Playlist of the Setlist
-      </Button>
 
       {/* Display track fetching statuses */}
       <Box mt={4}>
@@ -230,6 +241,18 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
           </Box>
         ))}
       </Box>
+
+      {/* Queue All Tracks Button */}
+      {isTracksReady && (
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleQueueAllTracks}
+          sx={{ marginTop: 2 }}
+        >
+          Queue All Tracks on Spotify
+        </Button>
+      )}
     </Box>
   );
 };
