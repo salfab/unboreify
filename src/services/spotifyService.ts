@@ -367,3 +367,7 @@ static async refreshSpotifyToken(refreshToken: string): Promise<string> {
 }
 }
 
+export function searchTracks(token: string, query: string): Promise<Track[]> {
+  return getRequest<{ tracks: { items: Track[] } }>(`${BASE_URL}/search?q=${encodeURIComponent(query)}&type=track&limit=5`, token)
+    .then((response) => response.tracks.items);
+}

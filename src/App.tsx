@@ -15,6 +15,7 @@ import useSpotifyApi from './hooks/useSpotifyApi';
 import Settings from './components/Settings';
 import { getPlaylistMultiplier } from './services/localStorageService';
 import FestivalPage from './components/FestivalPage';
+import ConcertSetlistPage from './components/ConcertSetlistPage';
 
 const App: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -104,6 +105,9 @@ const App: React.FC = () => {
                   <Button color="inherit" component={Link} to="/festiclub">
                     FestiClub
                   </Button>
+                  <Button color="inherit" component={Link} to="/setlist">
+                    Setlist
+                  </Button>
                   <IconButton color="inherit" onClick={handleMenu}>
                     <Avatar alt={currentUser?.display_name} src={currentUser?.images[0]?.url} />
                   </IconButton>
@@ -144,6 +148,7 @@ const App: React.FC = () => {
             <Route path="/queue" element={<QueuePage />} />
             <Route path="/callback" element={<QueuePage />} />
             <Route path="/festiclub" element={<FestivalPage />} />
+            <Route path="/setlist" element={<ConcertSetlistPage />} />
             <Route path="/" element={<HomePage />} /> {/* Placeholder for Home or other components */}
           </Routes>
         </Container>

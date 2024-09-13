@@ -38,14 +38,8 @@ const FestivalPage: FC<FestivalPageProps> = () => {
           if (artistId) {
             const tracks = await getArtistTopTracks(artistId); // Fetch top tracks
 
-            // Filter tracks to only include those where the primary artist matches the search term (case-insensitive)
-            const filteredTracks = tracks;
-            // tracks.filter(track => 
-            //   track.artists[0].name.toLowerCase() === artistName.toLowerCase()
-            // );
-
-            trackList.push(...filteredTracks);
-            console.log(`Fetched and filtered top tracks for ${artistName}`, filteredTracks.map(track => track.name));
+            trackList.push(...tracks);
+            console.log(`Fetched and filtered top tracks for ${artistName}`, tracks.map(track => track.name));
           }
         }
         
