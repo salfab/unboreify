@@ -46,7 +46,7 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
     for (const song of songList) {
       try {
         // Search the song on Spotify, prefer the version from the typed artist
-        const results = await searchTracks(`${artistName} - ${song}`);
+        const results = await searchTracks(song);
 
         // TODO : if no track by that artist is available, take the first one instead of failing
         const preferredTrack = results.find(track => track.artists[0].name.toLowerCase() === artistName.toLowerCase());
