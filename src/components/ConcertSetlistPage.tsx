@@ -86,6 +86,7 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
   // Handle artist selection or typing
   const handleArtistInputChange = (event: any, value: string) => {
     setArtistName(value);  // Store artist name (typed or selected)
+    setSetlists([]);  // Clear setlists when artist changes
     fetchArtists(value);   // Search for artist if typing
   };
 
