@@ -91,7 +91,7 @@ interface ArtistSearchResponse {
 export const searchArtistByName = async (artistName: string): Promise<Artist[]> => {
   try {
     const response = await axios.get<ArtistSearchResponse>(
-      `${BASE_URL}/search/artists?artistName=${encodeURIComponent(artistName)}`, 
+      `${BASE_URL}/search/artists?artistName=${encodeURIComponent(artistName)}&sort=relevance`, 
       { headers: HEADERS }
     );
     
