@@ -1,4 +1,4 @@
-import React, { FC, useCallback, useState, useEffect } from "react";
+import React, { FC, useCallback, useState, useMemo } from "react";
 import { Button, Typography, Box, TextField, CircularProgress, Avatar, Autocomplete, Select, MenuItem, FormControl, InputLabel } from "@mui/material";
 import { CheckCircle as CheckCircleIcon, Cancel as CancelIcon, Lightbulb as LightBulbIcon } from '@mui/icons-material';
 import { debounce } from 'lodash';
@@ -55,28 +55,21 @@ interface Setlist {
   };
 }
 
-interface ConcertSetlistPageProps {
-  // Define any props you need
-}
+interface ConcertSetlistPageProps {}
 
 const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
   const { searchTracks, startPlayback, getDevices } = useSpotifyApi();
-  const [artistName, setArtistName] = useState<string>('');  // Store typed artist name
+
+  const [artistName, setArtistName] = useState<string>('');  // Stores artist name, whether typed or selected
   const [artists, setArtists] = useState<Artist[]>([]);
-  const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null);  // Artist from the autocomplete selection
   const [setlists, setSetlists] = useState<Setlist[]>([]);
   const [selectedSetlist, setSelectedSetlist] = useState<Setlist | null>(null);
   const [setlistInput, setSetlistInput] = useState<string>(''); 
   const [trackStatuses, setTrackStatuses] = useState<{ song: string; status: 'loading' | 'success' | 'failure' | 'approximation'; track?: Track }[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isTracksReady, setIsTracksReady] = useState<boolean>(false); // To show "Queue All Tracks" button
-  const [originalTrackList, setOriginalTrackList] = useState<string[]>([]); // Store fetched track names to compare
+  const [isTracksReady, setIsTracksReady] = useState<boolean>(false); 
 
-  const handleSetlistChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setSetlistInput(event.target.value); // Allow manual modification of tracks
-  };
-
-  // Debounced function to search artists after 0.5 second of inactivity
+  // Debounced function to search artists after 0.5 seconds of inactivity
   const fetchArtists = useCallback(
     debounce(async (name: string) => {
       if (!name) return;
@@ -90,73 +83,59 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
     []
   );
 
-  // Handle artist selection from autocomplete
+  // Handle artist selection or typing
+  const handleArtistInputChange = (event: any, value: string) => {
+    setArtistName(value);  // Store artist name (typed or selected)
+    fetchArtists(value);   // Search for artist if typing
+  };
+
   const handleArtistSelect = async (event: any, artist: Artist | null) => {
-    setSelectedArtist(artist);
-
-    // Fetch setlists for the selected artist
     if (artist) {
-      try {
-        const setsList = await getLastSetsByArtist(artist.mbid);
-        setSetlists(setsList);
-      } catch (error) {
-        console.error('Error fetching setlists:', error);
-      }
+      setArtistName(artist.name);  // Set artist name
+      await fetchSetlists(artist.mbid);  // Fetch setlists for selected artist
     }
   };
 
-  // Handle input changes for typing only (not selection)
-  const handleInputChange = (event: any, value: string, reason: string) => {
-    if (reason === 'input') {
-      setArtistName(value);  // Capture the typed artist name
-      fetchArtists(value); 
+  // Fetch setlists when artist is selected
+  const fetchSetlists = async (mbid: string) => {
+    try {
+      const setsList = await getLastSetsByArtist(mbid);
+      setSetlists(setsList);
+    } catch (error) {
+      console.error('Error fetching setlists:', error);
     }
   };
 
-  // Automatically fetch tracks when setlist is selected
+  // Handle setlist selection and automatically fetch songs
   const handleSetlistSelect = async (event: React.ChangeEvent<{ value: unknown }>) => {
     const selectedSet = setlists.find(set => set.id === event.target.value);
-    setSelectedSetlist(selectedSet || null);
-
     if (selectedSet) {
+      setSelectedSetlist(selectedSet);
       const trackNames = selectedSet.sets.set.flatMap(s => s.song.map(song => song.name));
-      setOriginalTrackList(trackNames); // Store the original fetched track list for comparison
-      setSetlistInput(trackNames.join('\n')); // Populate the track list input automatically
+      setSetlistInput(trackNames.join('\n'));  // Populate the track list input automatically
       await handleMakePlaylist(trackNames);
     }
   };
 
-  // Helper function to perform a secondary search with the artist name
-  const performFallbackSearch = async (song: string): Promise<Track | null> => {
-    try {
-      const artistToUse = selectedArtist ? selectedArtist.name : artistName; // Fallback to typed artist name if no artist selected
-      const fallbackResults = await searchTracks(`${artistToUse} - ${song}`);
-      return fallbackResults.find(track => track.name.toLowerCase() === song.toLowerCase()) || null;
-    } catch (error) {
-      console.error('Error performing fallback search:', error);
-      return null;
-    }
-  };
-
-  // Fetch and build the playlist for the setlist or manual input
+  // Trim track names and build the playlist
   const handleMakePlaylist = async (songList: string[]) => {
     setIsLoading(true);
     setTrackStatuses(songList.map(song => ({ song, status: 'loading' })));
 
     const fetchedTracks: { song: string; status: 'success' | 'failure' | 'approximation'; track?: Track }[] = [];
 
-    for (const song of songList) {
+    for (const song of songList.map(s => s.trim())) {  // Trim white spaces here
       try {
-        const artistToUse = selectedArtist ? selectedArtist.name : artistName;  // Fallback to typed artist name if not selected
         const results = await searchTracks(song);
-        const preferredTrack = results.find(track => track.artists[0].name.toLowerCase() === artistToUse.toLowerCase());
+        let preferredTrack = results.find(track => track.artists[0].name.toLowerCase() === artistName.toLowerCase());
 
-        // If no exact match by artist is found, do a fallback search with the artist name
+        // If no exact match, search with the artist name included
         if (!preferredTrack) {
-          const fallbackTrack = await performFallbackSearch(song);
-          if (fallbackTrack) {
-            // Mark as success if the fallback search found an exact match
-            fetchedTracks.push({ song, status: 'success', track: fallbackTrack });
+          const fallbackResults = await searchTracks(`${artistName} - ${song}`);
+          preferredTrack = fallbackResults.find(track => track.name.toLowerCase() === song.toLowerCase());
+
+          if (preferredTrack) {
+            fetchedTracks.push({ song, status: 'success', track: preferredTrack });
           } else {
             fetchedTracks.push({ song, status: 'failure' });
           }
@@ -173,15 +152,16 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
     setIsTracksReady(fetchedTracks.every(track => track.status === 'success' || track.status === 'approximation'));
   };
 
-  // Check if the input has been modified compared to the original fetched track list
-  const isModified = useCallback(() => {
-    const currentTracks = setlistInput.split('\n').map(track => track.trim()).filter(Boolean);
-    return JSON.stringify(currentTracks) !== JSON.stringify(originalTrackList);
-  }, [setlistInput, originalTrackList]);
+  // Memoized check if the input has been modified compared to the original fetched track list
+  const isModified = useMemo(() => {
+    const currentTracks = setlistInput.split('\n').map(track => track.trim()).filter(Boolean);  // Trim white spaces
+    // TODO  :this doesn't work after editing the input box once it's been prefilled by the setlist
+    return JSON.stringify(currentTracks) !== JSON.stringify(trackStatuses.map(status => status.song));
+  }, [setlistInput, trackStatuses]);
 
   // Manually queue tracks from the input box
   const handleQueueTracksManually = async () => {
-    const trackNames = setlistInput.split('\n').filter(song => song.trim() !== '');
+    const trackNames = setlistInput.split('\n').map(song => song.trim()).filter(song => song !== '');  // Trim white spaces
     await handleMakePlaylist(trackNames);
   };
 
@@ -193,7 +173,7 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
         .map(status => status.track?.uri);
 
       const devices = await getDevices();
-      const deviceId = devices[0]?.id; // Select the first available device
+      const deviceId = devices[0]?.id; 
 
       if (deviceId && uris.length > 0) {
         await startPlayback(uris as string[], deviceId);
@@ -214,10 +194,10 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
         freeSolo
         options={artists}
         getOptionLabel={(option) => option.disambiguation ? `${option.name} (${option.disambiguation})` : option.name}
-        onInputChange={handleInputChange} 
+        onInputChange={handleArtistInputChange}
         onChange={handleArtistSelect} 
         renderInput={(params) => <TextField {...params} label="Search Artist" fullWidth />}
-        isOptionEqualToValue={(option, value) => option.mbid === value.mbid} 
+        isOptionEqualToValue={(option, value) => option.mbid === value.mbid}
         sx={{ marginBottom: 2 }}
       />
 
@@ -241,7 +221,7 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
         multiline
         rows={setlistInput ? setlistInput.split('\n').length : 3}
         value={setlistInput}
-        onChange={handleSetlistChange}
+        onChange={(e) => setSetlistInput(e.target.value)}
         fullWidth
         sx={{ marginBottom: 2 }}
       />
@@ -251,7 +231,7 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
         variant="contained"
         color="secondary"
         onClick={handleQueueTracksManually}
-        disabled={isLoading || !setlistInput.trim() || !isModified()} // Only enabled if modified
+        disabled={isLoading || !setlistInput.trim() || !isModified}
         sx={{ marginBottom: 2 }}
       >
         Build My Setlist
@@ -267,9 +247,7 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
               sx={{ marginRight: 2, width: 40, height: 40 }} 
             />
             <Box>
-              <Typography variant="body1">
-                {status.song}
-              </Typography>
+              <Typography variant="body1">{status.song}</Typography>
               <Typography variant="body2" color="textSecondary">
                 {status.track?.artists.map(artist => artist.name).join(', ')}
               </Typography>
