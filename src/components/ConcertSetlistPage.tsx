@@ -1,5 +1,5 @@
 import React, { FC, useCallback, useState, useMemo } from "react";
-import { Button, Typography, Box, TextField, CircularProgress, Avatar, Autocomplete, Select, MenuItem, FormControl, InputLabel } from "@mui/material";
+import { Button, Typography, Box, TextField, CircularProgress, Avatar, Autocomplete, Select, MenuItem, FormControl, InputLabel, SelectChangeEvent } from "@mui/material";
 import { CheckCircle as CheckCircleIcon, Cancel as CancelIcon, Lightbulb as LightBulbIcon } from '@mui/icons-material';
 import { debounce } from 'lodash';
 import useSpotifyApi from "../hooks/useSpotifyApi";
@@ -84,13 +84,13 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
   );
 
   // Handle artist selection or typing
-  const handleArtistInputChange = (event: any, value: string) => {
+  const handleArtistInputChange = (_event: unknown, value: string) => {
     setArtistName(value);  // Store artist name (typed or selected)
     setSetlists([]);  // Clear setlists when artist changes
     fetchArtists(value);   // Search for artist if typing
   };
 
-  const handleArtistSelect = async (event: any, artist: Artist | null) => {
+  const handleArtistSelect = async (_event: unknown, artist: Artist | null) => {
     if (artist) {
       setArtistName(artist.name);  // Set artist name
       await fetchSetlists(artist.mbid);  // Fetch setlists for selected artist
@@ -108,7 +108,7 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
   };
 
   // Handle setlist selection and automatically fetch songs
-  const handleSetlistSelect = async (event: React.ChangeEvent<{ value: unknown }>) => {
+  const handleSetlistSelect = async (event: SelectChangeEvent<string>) => {
     const selectedSet = setlists.find(set => set.id === event.target.value);
     if (selectedSet) {
       setSelectedSetlist(selectedSet);
@@ -194,9 +194,15 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
       <Autocomplete
         freeSolo
         options={artists}
-        getOptionLabel={(option) => option.disambiguation ? `${option.name} (${option.disambiguation})` : option.name}
+        getOptionLabel={(option) => {
+          // if option is a string, return it as is.
+          if (typeof option === 'string') {
+            return option;
+          }
+          return option.disambiguation ? `${option.name} (${option.disambiguation})` : option.name;
+        }}
         onInputChange={handleArtistInputChange}
-        onChange={handleArtistSelect} 
+        onChange={(e, v) => handleArtistSelect(e, v as Artist | null)} 
         renderInput={(params) => <TextField {...params} label="Search Artist" fullWidth />}
         isOptionEqualToValue={(option, value) => option.mbid === value.mbid}
         sx={{ marginBottom: 2 }}
@@ -206,7 +212,7 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
       {setlists.length > 0 && (
         <FormControl fullWidth sx={{ marginBottom: 2 }}>
           <InputLabel>Select Setlist</InputLabel>
-          <Select value={selectedSetlist?.id || ''} onChange={handleSetlistSelect}>
+          <Select value={selectedSetlist?.id || ''} onChange={(e) => handleSetlistSelect(e)}>
             {setlists.map((setlist) => (
               <MenuItem key={setlist.id} value={setlist.id}>
                 {setlist.venue.name} - {setlist.eventDate} ({setlist.sets.set.flatMap(s => s.song).length} tracks)
