@@ -188,6 +188,32 @@ export const getArtistTopTracks = async (token: string, artistId: string) => {
   const data = await getRequest<{ tracks: any[] }>(`${BASE_URL}/artists/${artistId}/top-tracks?market=US`, token);
   return data.tracks;
 };
+/**
+ * Fetches the Spotify Artist ID based on the artist's name
+ * @param token - Spotify API token for authentication
+ * @param artistName - The name of the artist to search
+ * @returns A promise that resolves to the artist's ID if found, or null if not found
+ */
+export const getArtistId = async (token: string, artistName: string): Promise<string | null> => {
+  try {
+    const data = await getRequest<{ artists: { items: { id: string }[] } }>(
+      `${BASE_URL}/search?q=${encodeURIComponent(artistName)}&type=artist&limit=1`, 
+      token
+    );
+    
+    // If the artist is found, return the ID of the first matching result
+    if (data.artists.items.length > 0) {
+      return data.artists.items[0].id;
+    }
+    
+    // If no artist is found, return null
+    return null;
+  } catch (error) {
+    console.error('Error fetching artist ID:', error);
+    return null;
+  }
+};
+
 
 export const getRecentlyPlayedTracks = async (token: string, after?: string, before?: string, limit: number = 50): Promise<RecentlyPlayedResponse> => {
   let url = `${BASE_URL}/me/player/recently-played?limit=${limit}`;
@@ -339,4 +365,9 @@ static async refreshSpotifyToken(refreshToken: string): Promise<string> {
     throw error;
   }
 }
+}
+
+export function searchTracks(token: string, query: string): Promise<Track[]> {
+  return getRequest<{ tracks: { items: Track[] } }>(`${BASE_URL}/search?q=${encodeURIComponent(query)}&type=track&limit=10`, token)
+    .then((response) => response.tracks.items);
 }
