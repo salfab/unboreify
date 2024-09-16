@@ -186,9 +186,13 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
 
   return (
     <Box sx={{ padding: 2 }}>
-      <Typography variant="h4" gutterBottom>
-        Concert Setlist Playlist
+      <Typography variant="h3" gutterBottom>
+        Concert Setlist
       </Typography>
+      <Typography variant="subtitle1" gutterBottom>
+        Build a playlist from a Concert Setlist
+      </Typography>
+
 
       {/* Artist Autocomplete */}
       <Autocomplete

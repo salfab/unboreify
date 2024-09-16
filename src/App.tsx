@@ -2,7 +2,7 @@
 import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
 import { AppBar, Toolbar, Typography, Button, Container, IconButton, Avatar, Menu, MenuItem, ListItemText, Divider } from '@mui/material';
-import { Home as HomeIcon, QueueMusic as QueueIcon, Settings as SettingsIcon } from '@mui/icons-material';
+import { Home as HomeIcon, QueueMusic as QueueIcon, Settings as SettingsIcon, SpeakerGroup as LiveMusicIcon } from '@mui/icons-material';
 import QueuePage from './components/QueuePage';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
@@ -19,24 +19,28 @@ import ConcertSetlistPage from './components/ConcertSetlistPage';
 
 const App: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [musicMenuAnchorEl, setMusicMenuAnchorEl] = useState<null | HTMLElement>(null); // State for live music menu
   const open = Boolean(anchorEl);
+  const openMusicMenu = Boolean(musicMenuAnchorEl); // State to check if music menu is open
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const { token, logIn, logOut } = useContext<IAuthContext>(AuthContext)
+  const { token, logIn, logOut } = useContext<IAuthContext>(AuthContext);
   const { currentUser } = useSpotifyApi();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [playlistMultiplier, setPlaylistMultiplier] = useState(getPlaylistMultiplier());
 
   useEffect(() => {
-    // store the playlist multiplier in local storage
+    // Store the playlist multiplier in local storage
     localStorage.setItem('playlistMultiplier', playlistMultiplier.toString());
-  }
-    , [playlistMultiplier]);
+  }, [playlistMultiplier]);
 
-
-  const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
+  const handleMenu = useCallback((event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
-  };
+  }, []);
+
+  const handleMusicMenu = useCallback((event: React.MouseEvent<HTMLElement>) => {
+    setMusicMenuAnchorEl(event.currentTarget);
+  }, []);
 
   const openSettings = useCallback(() => {
     setSettingsOpen(true);
@@ -46,9 +50,10 @@ const App: React.FC = () => {
     setSettingsOpen(false);
   }, []);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setAnchorEl(null);
-  };
+    setMusicMenuAnchorEl(null); // Close live music menu
+  }, []);
 
   return (
     <Router>
@@ -67,13 +72,43 @@ const App: React.FC = () => {
                   <IconButton color="inherit" component={Link} to="/queue">
                     <QueueIcon />
                   </IconButton>
-                  <MenuItem onClick={() => openSettings()}>
+
+                  {/* Live Music Features Button */}
+                  <IconButton color="inherit" onClick={handleMusicMenu}>
+                    <LiveMusicIcon />
+                  </IconButton>
+
+                  {/* Live Music Menu */}
+                  <Menu
+                    anchorEl={musicMenuAnchorEl}
+                    open={openMusicMenu}
+                    onClose={handleClose}
+                    anchorOrigin={{
+                      vertical: 'top',
+                      horizontal: 'right',
+                    }}
+                    transformOrigin={{
+                      vertical: 'top',
+                      horizontal: 'right',
+                    }}
+                  >
+                    <MenuItem component={Link} to="/festiclub" onClick={handleClose}>
+                      FestiClub
+                    </MenuItem>
+                    <MenuItem component={Link} to="/setlist" onClick={handleClose}>
+                      Concert Setlist
+                    </MenuItem>
+                  </Menu>
+
+                  <IconButton color="inherit" onClick={openSettings}>
                     <SettingsIcon />
-                  </MenuItem>
+                  </IconButton>
+
                   <IconButton color="inherit" onClick={handleMenu}>
                     <Avatar alt={currentUser?.display_name} src={currentUser?.images[0]?.url} />
                   </IconButton>
-                 
+
+                  {/* User Profile Menu */}
                   <Menu
                     anchorEl={anchorEl}
                     open={open}
@@ -127,7 +162,9 @@ const App: React.FC = () => {
                     <MenuItem disabled>
                       <ListItemText primary={currentUser?.display_name} />
                     </MenuItem>
-                    <MenuItem onClick={() => openSettings()}><SettingsIcon /> Settings</MenuItem>
+                    <MenuItem onClick={openSettings}>
+                      <SettingsIcon /> Settings
+                    </MenuItem>
                     <Divider sx={{ my: 0.5 }} />
                     <MenuItem onClick={() => logOut()}>Sign out</MenuItem>
                   </Menu>
@@ -142,7 +179,6 @@ const App: React.FC = () => {
         </Toolbar>
       </AppBar>
       <ErrorBoundary FallbackComponent={ErrorDisplay}>
-
         <Container>
           <Routes>
             <Route path="/queue" element={<QueuePage />} />
