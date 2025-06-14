@@ -3,7 +3,7 @@ import App from './App';
 import { CssBaseline, ThemeProvider, createTheme } from '@mui/material';
 import './index.css';
 import { AuthProvider, TAuthConfig, TRefreshTokenExpiredEvent } from 'react-oauth2-code-pkce';
-import { SCOPES } from './services/spotifyService';
+import { SPOTIFY_CONFIG, SPOTIFY_URLS } from './config/spotify';
 import { createRoot } from 'react-dom/client';
 import { ErrorBoundary } from 'react-error-boundary';
 import ErrorDisplay from './components/ErrorDisplay';
@@ -22,11 +22,11 @@ if ('serviceWorker' in navigator) {
 const authConfig: TAuthConfig = {
   autoLogin: false,
   storageKeyPrefix: 'SPOTIFY_',
-  clientId: import.meta.env.VITE_SPOTIFY_CLIENT_ID,
-  authorizationEndpoint: 'https://accounts.spotify.com/authorize',
-  tokenEndpoint: 'https://accounts.spotify.com/api/token',
-  redirectUri: import.meta.env.VITE_SPOTIFY_REDIRECT_URI,
-  scope: SCOPES,
+  clientId: SPOTIFY_CONFIG.CLIENT_ID,
+  authorizationEndpoint: SPOTIFY_URLS.AUTHORIZE,
+  tokenEndpoint: SPOTIFY_URLS.TOKEN,
+  redirectUri: SPOTIFY_CONFIG.REDIRECT_URI,
+  scope: SPOTIFY_CONFIG.SCOPES,
   tokenExpiresIn: 3600,
   refreshTokenExpiresIn: 31_536_000, // 365 days
   decodeToken: false,

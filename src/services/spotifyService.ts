@@ -1,6 +1,5 @@
 import axios from 'axios';
-
-const BASE_URL = 'https://api.spotify.com/v1';
+import { getSpotifyApiUrl, SPOTIFY_CONFIG, SPOTIFY_URLS } from '../config/spotify';
 
 export interface SpotifyUser {
   id: string;
@@ -108,10 +107,8 @@ export interface PlaybackState {
   };
   timestamp: number;
   progress_ms: number;
-  is_playing: boolean;
-  item: Track;
+  is_playing: boolean;  item: Track;
 }
-export const SCOPES = 'user-read-currently-playing user-read-playback-state user-modify-playback-state user-read-recently-played user-modify-playback-state playlist-modify-private playlist-modify-public';
 
 // Utility function to create headers
 const createHeaders = (token: string) => ({
@@ -150,43 +147,43 @@ const putRequest = async (url: string, token: string, data: any = {}) => {
 };
 
 export const getCurrentTrack = async (token: string) => {
-  return await getRequest<Track>(`${BASE_URL}/me/player/currently-playing`, token);
+  return await getRequest<Track>(getSpotifyApiUrl('/me/player/currently-playing'), token);
 };
 
 export const getUserPlaylists = async (token: string) => {
-  const data = await getRequest<{ items: any[] }>(`${BASE_URL}/me/playlists`, token);
+  const data = await getRequest<{ items: any[] }>(getSpotifyApiUrl('/me/playlists'), token);
   return data.items;
 };
 
 export const getPlaylist = async (token: string, playlistId: string): Promise<PlaylistResponse> => {
-  const data = await getRequest<PlaylistResponse>(`${BASE_URL}/playlists/${playlistId}`, token);
+  const data = await getRequest<PlaylistResponse>(getSpotifyApiUrl(`/playlists/${playlistId}`), token);
   return data;
 };
 
 export const getPlaylistTracks = async (token: string, playlistId: string): Promise<PlaylistTracksResponse> => {
-  const data = await getRequest<PlaylistTracksResponse>(`${BASE_URL}/playlists/${playlistId}/tracks`, token);
+  const data = await getRequest<PlaylistTracksResponse>(getSpotifyApiUrl(`/playlists/${playlistId}/tracks`), token);
   return data;
 };
 
 export const addToQueue = async (token: string, uri: string, deviceId: string) => {
-  await postRequest(`${BASE_URL}/me/player/queue?uri=${uri}&device_id=${deviceId}`, token);
+  await postRequest(getSpotifyApiUrl(`/me/player/queue?uri=${uri}&device_id=${deviceId}`), token);
 };
 
 export const getDevices = async (token: string) => {
-  const data = await getRequest<{ devices: {id: string}[] }>(`${BASE_URL}/me/player/devices`, token);
+  const data = await getRequest<{ devices: {id: string}[] }>(getSpotifyApiUrl('/me/player/devices'), token);
   return data.devices;
 };
 
 export const getQueue = async (token: string): Promise<SpotifyQueue> => {
-  return await getRequest<SpotifyQueue>(`${BASE_URL}/me/player/queue`, token);
+  return await getRequest<SpotifyQueue>(getSpotifyApiUrl('/me/player/queue'), token);
 };
 
 export const getCurrentUser = async (token: string) => {
-  return await getRequest<any>(`${BASE_URL}/me`, token);
+  return await getRequest<any>(getSpotifyApiUrl('/me'), token);
 };
 
 export const getArtistTopTracks = async (token: string, artistId: string) => {
-  const data = await getRequest<{ tracks: any[] }>(`${BASE_URL}/artists/${artistId}/top-tracks?market=US`, token);
+  const data = await getRequest<{ tracks: any[] }>(getSpotifyApiUrl(`/artists/${artistId}/top-tracks?market=US`), token);
   return data.tracks;
 };
 /**
@@ -198,7 +195,7 @@ export const getArtistTopTracks = async (token: string, artistId: string) => {
 export const getArtistId = async (token: string, artistName: string): Promise<string | null> => {
   try {
     const data = await getRequest<{ artists: { items: { id: string }[] } }>(
-      `${BASE_URL}/search?q=${encodeURIComponent(artistName)}&type=artist&limit=1`, 
+      getSpotifyApiUrl(`/search?q=${encodeURIComponent(artistName)}&type=artist&limit=1`), 
       token
     );
     
@@ -217,7 +214,7 @@ export const getArtistId = async (token: string, artistName: string): Promise<st
 
 
 export const getRecentlyPlayedTracks = async (token: string, after?: string, before?: string, limit: number = 50): Promise<RecentlyPlayedResponse> => {
-  let url = `${BASE_URL}/me/player/recently-played?limit=${limit}`;
+  let url = getSpotifyApiUrl(`/me/player/recently-played?limit=${limit}`);
   if (after) {
     url += `&after=${after}`;
   } else if (before) {
@@ -227,11 +224,11 @@ export const getRecentlyPlayedTracks = async (token: string, after?: string, bef
 };
 
 export const skipToNextTrack = async (token: string) => {
-  await postRequest(`${BASE_URL}/me/player/next`, token);
+  await postRequest(getSpotifyApiUrl('/me/player/next'), token);
 };
 
 export const startPlayback = async (token: string, uris: string[], deviceId?: string) => {
-  const url = `${BASE_URL}/me/player/play${deviceId ? `?device_id=${deviceId}` : ''}`;
+  const url = getSpotifyApiUrl(`/me/player/play${deviceId ? `?device_id=${deviceId}` : ''}`);
   const data = {
     uris,
   };
@@ -239,7 +236,7 @@ export const startPlayback = async (token: string, uris: string[], deviceId?: st
 };
 
 export const getPlaybackState = async (token: string): Promise<PlaybackState> => {
-  return await getRequest<PlaybackState>(`${BASE_URL}/me/player`, token);
+  return await getRequest<PlaybackState>(getSpotifyApiUrl('/me/player'), token);
 };
 
 const maxIdsPerCallGetTracks = 50;
@@ -254,7 +251,7 @@ export const getTracks = async (trackIds: string[], token: string): Promise<Trac
   if (trackIds.length > maxIdsPerCallGetTracks) {
     return fetchTracksInBatches(trackIds, token);
   }
-  const data = await getRequest<{ tracks: Track[] }>(`${BASE_URL}/tracks?ids=${trackIds.join(',')}`, token);
+  const data = await getRequest<{ tracks: Track[] }>(getSpotifyApiUrl(`/tracks?ids=${trackIds.join(',')}`), token);
   return data.tracks;
 };
 
@@ -282,7 +279,7 @@ const fetchTracksInBatches = async (trackIds: string[], token: string): Promise<
  * @returns A promise that resolves to a Track object.
  */
 export const getTrackDetails = async (trackId: string, token: string): Promise<Track> => {
-  const data = await getRequest<any>(`${BASE_URL}/tracks/${trackId}`, token);
+  const data = await getRequest<any>(getSpotifyApiUrl(`/tracks/${trackId}`), token);
   return {
     name: data.name,
     uri: data.uri,
@@ -334,16 +331,15 @@ class TokenManager {
  * @param scope - The scope of the access request
  */
 static async refreshSpotifyToken(refreshToken: string): Promise<string> {
-  const endpoint = 'https://accounts.spotify.com/api/token';
+  const endpoint = SPOTIFY_URLS.TOKEN;
   const grantType = 'refresh_token';
 
 
   const params = new URLSearchParams();
-  params.append('grant_type', grantType);
-  params.append('refresh_token', refreshToken.slice(1, -1));
-  params.append('client_id', import.meta.env.VITE_SPOTIFY_CLIENT_ID);
-  params.append('redirect_uri', import.meta.env.VITE_SPOTIFY_REDIRECT_URI);
-  params.append('scope', SCOPES);
+  params.append('grant_type', grantType);  params.append('refresh_token', refreshToken.slice(1, -1));
+  params.append('client_id', SPOTIFY_CONFIG.CLIENT_ID);
+  params.append('redirect_uri', SPOTIFY_CONFIG.REDIRECT_URI);
+  params.append('scope', SPOTIFY_CONFIG.SCOPES);
 
   try {
     const response = await axios.post(endpoint, params.toString(), {
@@ -369,7 +365,7 @@ static async refreshSpotifyToken(refreshToken: string): Promise<string> {
 }
 
 export function searchTracks(token: string, query: string): Promise<Track[]> {
-  return getRequest<{ tracks: { items: Track[] } }>(`${BASE_URL}/search?q=${encodeURIComponent(query)}&type=track&limit=10`, token)
+  return getRequest<{ tracks: { items: Track[] } }>(getSpotifyApiUrl(`/search?q=${encodeURIComponent(query)}&type=track&limit=10`), token)
     .then((response) => response.tracks.items);
 }
 
@@ -379,12 +375,12 @@ export const createPlaylist = async (token: string, userId: string, name: string
     description: description || '',
     public: false
   };
-  return await postRequest(`${BASE_URL}/users/${userId}/playlists`, token, data);
+  return await postRequest(getSpotifyApiUrl(`/users/${userId}/playlists`), token, data);
 };
 
 export const addTracksToPlaylist = async (token: string, playlistId: string, trackUris: string[]): Promise<void> => {
   const data = {
     uris: trackUris
   };
-  await postRequest(`${BASE_URL}/playlists/${playlistId}/tracks`, token, data);
+  await postRequest(getSpotifyApiUrl(`/playlists/${playlistId}/tracks`), token, data);
 };
