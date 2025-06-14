@@ -379,8 +379,19 @@ export const createPlaylist = async (token: string, userId: string, name: string
 };
 
 export const addTracksToPlaylist = async (token: string, playlistId: string, trackUris: string[]): Promise<void> => {
-  const data = {
-    uris: trackUris
-  };
-  await postRequest(getSpotifyApiUrl(`/playlists/${playlistId}/tracks`), token, data);
+  const BATCH_SIZE = 100; // Spotify API limit
+  
+  // Split trackUris into chunks of 100 or less
+  const chunks: string[][] = [];
+  for (let i = 0; i < trackUris.length; i += BATCH_SIZE) {
+    chunks.push(trackUris.slice(i, i + BATCH_SIZE));
+  }
+  
+  // Add tracks synchronously to maintain order
+  for (const chunk of chunks) {
+    const data = {
+      uris: chunk
+    };
+    await postRequest(getSpotifyApiUrl(`/playlists/${playlistId}/tracks`), token, data);
+  }
 };
