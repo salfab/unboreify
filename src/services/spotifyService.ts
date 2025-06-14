@@ -3,6 +3,7 @@ import axios from 'axios';
 const BASE_URL = 'https://api.spotify.com/v1';
 
 export interface SpotifyUser {
+  id: string;
   display_name: string;
   images: { url: string }[];
   // Add other user properties if needed
@@ -110,7 +111,7 @@ export interface PlaybackState {
   is_playing: boolean;
   item: Track;
 }
-export const SCOPES = 'user-read-currently-playing user-read-playback-state user-modify-playback-state user-read-recently-played user-modify-playback-state';
+export const SCOPES = 'user-read-currently-playing user-read-playback-state user-modify-playback-state user-read-recently-played user-modify-playback-state playlist-modify-private playlist-modify-public';
 
 // Utility function to create headers
 const createHeaders = (token: string) => ({
@@ -371,3 +372,19 @@ export function searchTracks(token: string, query: string): Promise<Track[]> {
   return getRequest<{ tracks: { items: Track[] } }>(`${BASE_URL}/search?q=${encodeURIComponent(query)}&type=track&limit=10`, token)
     .then((response) => response.tracks.items);
 }
+
+export const createPlaylist = async (token: string, userId: string, name: string, description?: string): Promise<{ id: string }> => {
+  const data = {
+    name,
+    description: description || '',
+    public: false
+  };
+  return await postRequest(`${BASE_URL}/users/${userId}/playlists`, token, data);
+};
+
+export const addTracksToPlaylist = async (token: string, playlistId: string, trackUris: string[]): Promise<void> => {
+  const data = {
+    uris: trackUris
+  };
+  await postRequest(`${BASE_URL}/playlists/${playlistId}/tracks`, token, data);
+};

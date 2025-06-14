@@ -10,6 +10,7 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
 import { useErrorBoundary } from 'react-error-boundary';
 import PlaylistPresenter from './PlaylistPresenter';
+import SaveToSpotifyPlaylist from './SaveToSpotifyPlaylist';
 import { IAuthContext, AuthContext } from 'react-oauth2-code-pkce';
 import { SpotifyQueue, Track, PlaylistResponse } from '../services/spotifyService';
 import { useNavigate } from 'react-router-dom';
@@ -37,6 +38,9 @@ const QueuePage: React.FC = () => {
     getUserPlaylists,
     getPlaylist,
     getDevices,
+    createPlaylist,
+    addTracksToPlaylist,
+    currentUser,
   } = useSpotifyApi();
 
   const [queueData, setQueueData] = useState<SpotifyQueue | null>(null);
@@ -140,6 +144,26 @@ const QueuePage: React.FC = () => {
     setSourceTracks(alternativePlaylist);
     setMode('extend');
   };
+
+  const handleSaveToSpotify = useCallback(async (playlistName: string, tracks: Track[]) => {
+    if (!currentUser?.id) {
+      throw new Error('User not found');
+    }
+
+    try {
+      // Create the playlist
+      const playlist = await createPlaylist(currentUser.id, playlistName);
+      
+      // Add tracks to the playlist
+      const trackUris = tracks.map(track => track.uri);
+      await addTracksToPlaylist(playlist.id, trackUris);
+      
+      console.log(`Successfully created playlist "${playlistName}" with ${tracks.length} tracks`);
+    } catch (error) {
+      console.error('Failed to save playlist to Spotify:', error);
+      throw error;
+    }
+  }, [createPlaylist, addTracksToPlaylist, currentUser]);
 
   const updateProgress: ProgressCallback = useCallback((progress) => {
     setProgress(progress);
@@ -371,11 +395,18 @@ const QueuePage: React.FC = () => {
         >
           Alternative Playlist
           <Tooltip title="You like your alternative playlist, but you wanted more ? Double the fun by doubling its size !">
-
             <IconButton onClick={handleEnhanceClick} size="small" sx={{ marginLeft: 1 }}>
               <AutoAwesomeIcon sx={{ color: mode === 'extend' ? 'primary.main' : 'text.primary' }} />
             </IconButton>
           </Tooltip>
+          
+          {alternativePlaylist.length > 0 && (
+            <SaveToSpotifyPlaylist
+              tracks={alternativePlaylist}
+              defaultPlaylistName={`unborified [${selectedPlaylist?.name || queueData?.currently_playing?.album?.name || 'current queue'}]`}
+              onSavePlaylist={handleSaveToSpotify}
+            />
+          )}
         </Typography>
         {alternativePlaylist.map((track) => <TrackCard track={track} key={track.uri} />)}
       </Grid>

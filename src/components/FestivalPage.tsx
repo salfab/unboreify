@@ -1,24 +1,16 @@
-import React, { FC, useEffect, useState } from "react";
+import React, { FC, useEffect, useState, useCallback } from "react";
 import { Button, Typography, Box, TextField, Divider } from "@mui/material";
 import { useLocation, useNavigate } from "react-router-dom";
 import useSpotifyApi from "../hooks/useSpotifyApi";
+import SaveToSpotifyPlaylist from "./SaveToSpotifyPlaylist";
+import { Track } from "../services/spotifyService";
 
 interface FestivalPageProps {
   // Define any other props you need
 }
 
-interface Track {
-  id: string;
-  name: string;
-  uri: string;
-  album: {
-    images: { url: string }[];
-  };
-  artists: { name: string }[]; // Ensure that track objects contain the artist information
-}
-
 const FestivalPage: FC<FestivalPageProps> = () => {
-  const { getArtistTopTracks, getArtistId, getDevices, startPlayback } = useSpotifyApi();
+  const { getArtistTopTracks, getArtistId, getDevices, startPlayback, createPlaylist, addTracksToPlaylist, currentUser } = useSpotifyApi();
   const [artistInput, setArtistInput] = useState<string>('');
   const [artistsList, setArtistsList] = useState<string[]>([]);
   const [topTracks, setTopTracks] = useState<Track[]>([]);
@@ -74,8 +66,6 @@ const FestivalPage: FC<FestivalPageProps> = () => {
     // Navigate to /itfwi with the concatenated artist names as a query parameter
     navigate(`/festiclub?artist=${encodeURIComponent(concatenatedArtists)}`);
     setArtistsList(artistsList ?? []); // Initialize the input box with artist names
-
-
   };
 
   const handlePlayAllTracks = async () => {
@@ -91,6 +81,26 @@ const FestivalPage: FC<FestivalPageProps> = () => {
       console.error("Error starting playback:", error);
     }
   };
+
+  const handleSaveToSpotify = useCallback(async (playlistName: string, tracks: Track[]) => {
+    if (!currentUser?.id) {
+      throw new Error('User not found');
+    }
+
+    try {
+      // Create the playlist
+      const playlist = await createPlaylist(currentUser.id, playlistName);
+      
+      // Add tracks to the playlist
+      const trackUris = tracks.map(track => track.uri);
+      await addTracksToPlaylist(playlist.id, trackUris);
+      
+      console.log(`Successfully created playlist "${playlistName}" with ${tracks.length} tracks`);
+    } catch (error) {
+      console.error('Failed to save playlist to Spotify:', error);
+      throw error;
+    }
+  }, [createPlaylist, addTracksToPlaylist, currentUser]);
 
   return (
     <Box sx={{ padding: 2 }}>
@@ -147,7 +157,12 @@ const FestivalPage: FC<FestivalPageProps> = () => {
 
                 acc.push(
                   <Box display="flex" alignItems="center" key={track.id} sx={{ marginBottom: 1 }}>
-                    <img src={track.album.images[0]?.url} alt={track.name} style={{ width: 50, height: 50, marginRight: 10 }} />
+                    <Box 
+                      component="img" 
+                      src={track.album.images[0]?.url} 
+                      alt={track.name} 
+                      sx={{ width: 50, height: 50, marginRight: 1.25 }} 
+                    />
                     <Typography variant="body1">{track.name}</Typography>
                   </Box>
                 );
@@ -160,7 +175,7 @@ const FestivalPage: FC<FestivalPageProps> = () => {
       )}
 
       {topTracks.length > 0 && (
-        <Box mt={4}>
+        <Box mt={4} display="flex" gap={2} alignItems="center">
           <Button
             variant="contained"
             color="primary"
@@ -168,6 +183,21 @@ const FestivalPage: FC<FestivalPageProps> = () => {
           >
             Play All Tracks on Spotify
           </Button>
+          
+          <SaveToSpotifyPlaylist
+            tracks={topTracks}
+            defaultPlaylistName={`unborified [festival tracks]`}
+            onSavePlaylist={handleSaveToSpotify}
+            sx={{ 
+              '& .MuiIconButton-root': {
+                bgcolor: 'success.main',
+                color: 'white',
+                '&:hover': {
+                  bgcolor: 'success.dark',
+                }
+              }
+            }}
+          />
         </Box>
       )}
     </Box>

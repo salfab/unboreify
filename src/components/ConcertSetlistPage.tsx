@@ -4,16 +4,8 @@ import { CheckCircle as CheckCircleIcon, Cancel as CancelIcon, Lightbulb as Ligh
 import { debounce } from 'lodash';
 import useSpotifyApi from "../hooks/useSpotifyApi";
 import { getLastSetsByArtist, searchArtistByName } from "../services/setlistFmService";
-
-interface Track {
-  id: string;
-  name: string;
-  uri: string;
-  album: {
-    images: { url: string }[];
-  };
-  artists: { name: string }[];
-}
+import SaveToSpotifyPlaylist from "./SaveToSpotifyPlaylist";
+import { Track } from "../services/spotifyService";
 
 interface Artist {
   mbid: string;
@@ -58,7 +50,7 @@ interface Setlist {
 interface ConcertSetlistPageProps {}
 
 const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
-  const { searchTracks, startPlayback, getDevices } = useSpotifyApi();
+  const { searchTracks, startPlayback, getDevices, createPlaylist, addTracksToPlaylist, currentUser } = useSpotifyApi();
 
   const [artistName, setArtistName] = useState<string>('');  // Stores artist name, whether typed or selected
   const [artists, setArtists] = useState<Artist[]>([]);
@@ -184,6 +176,26 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
     }
   };
 
+  const handleSaveToSpotify = useCallback(async (playlistName: string, tracks: Track[]) => {
+    if (!currentUser?.id) {
+      throw new Error('User not found');
+    }
+
+    try {
+      // Create the playlist
+      const playlist = await createPlaylist(currentUser.id, playlistName);
+      
+      // Add tracks to the playlist
+      const trackUris = tracks.map(track => track.uri);
+      await addTracksToPlaylist(playlist.id, trackUris);
+      
+      console.log(`Successfully created playlist "${playlistName}" with ${tracks.length} tracks`);
+    } catch (error) {
+      console.error('Failed to save playlist to Spotify:', error);
+      throw error;
+    }
+  }, [createPlaylist, addTracksToPlaylist, currentUser]);
+
   return (
     <Box sx={{ padding: 2 }}>
       <Typography variant="h3" gutterBottom>
@@ -275,14 +287,33 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
 
       {/* Queue All Tracks Button */}
       {isTracksReady && (
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={handleQueueAllTracks}
-          sx={{ marginTop: 2 }}
-        >
-          Queue All Tracks on Spotify
-        </Button>
+        <Box display="flex" gap={2} alignItems="center" sx={{ marginTop: 2 }}>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleQueueAllTracks}
+          >
+            Queue All Tracks on Spotify
+          </Button>
+          
+          <SaveToSpotifyPlaylist
+            tracks={trackStatuses
+              .filter(status => status.status === 'success' || status.status === 'approximation')
+              .map(status => status.track!)
+            }
+            defaultPlaylistName={`unborified [${selectedSetlist?.venue.name || 'concert setlist'}]`}
+            onSavePlaylist={handleSaveToSpotify}
+            sx={{ 
+              '& .MuiIconButton-root': {
+                bgcolor: 'success.main',
+                color: 'white',
+                '&:hover': {
+                  bgcolor: 'success.dark',
+                }
+              }
+            }}
+          />
+        </Box>
       )}
     </Box>
   );

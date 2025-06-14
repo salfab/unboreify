@@ -83,6 +83,14 @@ const useSpotifyApi = () => {
     return spotifyService.searchTracks(token, query);
   }, [token]);
 
+  const createPlaylist = useCallback((userId: string, name: string, description?: string) => {
+    return spotifyService.createPlaylist(token, userId, name, description);
+  }, [token]);
+
+  const addTracksToPlaylist = useCallback((playlistId: string, trackUris: string[]) => {
+    return spotifyService.addTracksToPlaylist(token, playlistId, trackUris);
+  }, [token]);
+
   return {
     getCurrentTrack,
     getUserPlaylists,
@@ -101,6 +109,8 @@ const useSpotifyApi = () => {
     getTracks,
     getTrackDetails,
     searchTracks,
+    createPlaylist,
+    addTracksToPlaylist,
     currentUser,
   };
 };
