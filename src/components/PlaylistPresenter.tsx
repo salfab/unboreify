@@ -11,9 +11,10 @@ interface PlaylistPresenterProps {
     onBackToQueue: () => void;
     onEnhance?: () => void;
     enhanceMode?: 'extend' | 'alternative';
+    onRemoveTrack?: (track: Track) => void;
 }
 
-const PlaylistPresenter: React.FC<PlaylistPresenterProps> = ({ name, items, onBackToQueue, onEnhance, enhanceMode }) => {
+const PlaylistPresenter: React.FC<PlaylistPresenterProps> = ({ name, items, onBackToQueue, onEnhance, enhanceMode, onRemoveTrack }) => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [isPlaylistOpen, setIsPlaylistOpen] = useState<boolean>(!isMobile);
@@ -49,11 +50,13 @@ const PlaylistPresenter: React.FC<PlaylistPresenterProps> = ({ name, items, onBa
                     </IconButton>
                 )}
             </Typography>
-            <Grid container spacing={2}>
-                <Collapse in={isPlaylistOpen || !isMobile} timeout="auto" unmountOnExit>
+            <Grid container spacing={2}>                <Collapse in={isPlaylistOpen || !isMobile} timeout="auto" unmountOnExit>
                     {items.map((track) => (
                         <Grid item xs={12} sm={12} key={track.id}>
-                            <TrackCard track={track} />
+                            <TrackCard 
+                                track={track} 
+                                onRemove={onRemoveTrack}
+                            />
                         </Grid>
                     ))}
                 </Collapse>

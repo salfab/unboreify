@@ -42,7 +42,6 @@ const QueuePage: React.FC = () => {
     addTracksToPlaylist,
     currentUser,
   } = useSpotifyApi();
-
   const [queueData, setQueueData] = useState<SpotifyQueue | null>(null);
   const [alternativePlaylist, setAlternativePlaylist] = useState<Track[]>([]);
   const [currentAlternativePlaylistSourceTracks, setCurrentAlternativePlaylistSourceTracks] = useState<{ tracks: string[], mode: 'extend' | 'alternative' }>({ tracks: [], mode: 'alternative' });
@@ -52,6 +51,7 @@ const QueuePage: React.FC = () => {
   const [isComplete, setIsComplete] = useState<boolean>(true);
   const [queueOpen, setQueueOpen] = useState<boolean>(!isMobile);
   const [selectedPlaylist, setSelectedPlaylist] = useState<PlaylistResponse | null>(null);
+  const [filteredPlaylistTracks, setFilteredPlaylistTracks] = useState<Track[]>([]);
   const [showQueue, setShowQueue] = useState<boolean>(true);
   const [mode, setMode] = useState<'extend' | 'alternative'>('alternative');
   const [showProcessMessageBar, setShowProcessMessageBar] = useState<boolean>(false);
@@ -104,11 +104,11 @@ const QueuePage: React.FC = () => {
       console.error(error);
     }
   }, [getUserPlaylists]);
-
   const fetchPlaylistTracks = useCallback(async (playlistId: string) => {
     try {
       const playlist = await getPlaylist(playlistId);
       setSelectedPlaylist(playlist);
+      setFilteredPlaylistTracks(playlist.tracks.items.map(o => o.track));
     } catch (error) {
       console.error(error);
       throw error;
@@ -144,10 +144,9 @@ const QueuePage: React.FC = () => {
     setSourceTracks(alternativePlaylist);
     setMode('extend');
   };
-
   const handleEnhancePlaylistClick = () => {
     if (selectedPlaylist) {
-      setSourceTracks(selectedPlaylist.tracks.items.map(o => o.track));
+      setSourceTracks(filteredPlaylistTracks);
       setMode('extend');
       setShowQueue(false); // Stay on the playlist view
     }
@@ -175,6 +174,34 @@ const QueuePage: React.FC = () => {
 
   const updateProgress: ProgressCallback = useCallback((progress) => {
     setProgress(progress);
+  }, []);
+
+  // Remove track handlers
+  const removeFromQueue = useCallback((trackToRemove: Track) => {
+    setQueueData(prevQueue => {
+      if (!prevQueue) return prevQueue;
+      return {
+        ...prevQueue,
+        queue: prevQueue.queue.filter(track => track.uri !== trackToRemove.uri)
+      };
+    });
+    
+    // Also remove from source tracks if present
+    setSourceTracks(prevSource => 
+      prevSource.filter(track => track.uri !== trackToRemove.uri)
+    );
+  }, []);
+
+  const removeFromAlternativePlaylist = useCallback((trackToRemove: Track) => {
+    setAlternativePlaylist(prevPlaylist => 
+      prevPlaylist.filter(track => track.uri !== trackToRemove.uri)
+    );
+  }, []);
+
+  const removeFromPlaylistTracks = useCallback((trackToRemove: Track) => {
+    setFilteredPlaylistTracks(prevTracks => 
+      prevTracks.filter(track => track.uri !== trackToRemove.uri)
+    );
   }, []);
 
   // TODO: Check why this effect is being called twice on page refresh
@@ -234,11 +261,11 @@ const QueuePage: React.FC = () => {
   const toggleQueue = () => {
     setQueueOpen(!queueOpen);
   };
-
   const handleBackToQueue = async () => {
     setShowQueue(true);
     setMode('alternative');
     setSelectedPlaylist(null);
+    setFilteredPlaylistTracks([]);
     fetchQueue(false);
   };
 
@@ -338,7 +365,11 @@ const QueuePage: React.FC = () => {
             <Typography variant="h4" gutterBottom>
               Currently Playing
             </Typography>
-            {queueData?.currently_playing ? <TrackCard track={queueData.currently_playing} /> : <>Play music to get started</>}
+            {queueData?.currently_playing ? (
+              <TrackCard track={queueData.currently_playing} />
+            ) : (
+              <>Play music to get started</>
+            )}
           </Grid>
           <Grid item xs={12} sm={6}>
             <Typography variant="h4" gutterBottom>
@@ -382,22 +413,27 @@ const QueuePage: React.FC = () => {
                 </IconButton>
               )}
             </Typography>
-            {isMobile && <Divider />}
-            <Collapse in={queueOpen || !isMobile} timeout="auto" unmountOnExit>
-              {queueData?.queue.map((track, i) => <TrackCard track={track} key={`${track.uri}-${i}`} />)}
+            {isMobile && <Divider />}            <Collapse in={queueOpen || !isMobile} timeout="auto" unmountOnExit>
+              {queueData?.queue.map((track, i) => (
+                <TrackCard 
+                  track={track} 
+                  key={`${track.uri}-${i}`} 
+                  onRemove={removeFromQueue}
+                />
+              ))}
             </Collapse>
           </Grid>
 
         </>
-      ) : (        <Grid item xs={12} sm={6}>
-          {selectedPlaylist && (
+      ) : (        <Grid item xs={12} sm={6}>          {selectedPlaylist && (
             <PlaylistPresenter 
               onBackToQueue={handleBackToQueue} 
-              items={selectedPlaylist.tracks.items.map(o => o.track)} 
+              items={filteredPlaylistTracks} 
               name={selectedPlaylist.name} 
               description={selectedPlaylist.description}
               onEnhance={handleEnhancePlaylistClick}
               enhanceMode={mode}
+              onRemoveTrack={removeFromPlaylistTracks}
             />
           )}
         </Grid>
@@ -424,7 +460,13 @@ const QueuePage: React.FC = () => {
             />
           )}
         </Typography>
-        {alternativePlaylist.map((track) => <TrackCard track={track} key={track.uri} />)}
+        {alternativePlaylist.map((track) => (
+          <TrackCard 
+            track={track} 
+            key={track.uri} 
+            onRemove={removeFromAlternativePlaylist}
+          />
+        ))}
       </Grid>
       <Grid item xs={12}>
         <Typography variant="h4" gutterBottom>
