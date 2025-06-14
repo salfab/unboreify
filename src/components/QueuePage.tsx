@@ -145,6 +145,14 @@ const QueuePage: React.FC = () => {
     setMode('extend');
   };
 
+  const handleEnhancePlaylistClick = () => {
+    if (selectedPlaylist) {
+      setSourceTracks(selectedPlaylist.tracks.items.map(o => o.track));
+      setMode('extend');
+      setShowQueue(false); // Stay on the playlist view
+    }
+  };
+
   const handleSaveToSpotify = useCallback(async (playlistName: string, tracks: Track[]) => {
     if (!currentUser?.id) {
       throw new Error('User not found');
@@ -381,9 +389,17 @@ const QueuePage: React.FC = () => {
           </Grid>
 
         </>
-      ) : (
-        <Grid item xs={12} sm={6}>
-          {selectedPlaylist && <PlaylistPresenter onBackToQueue={handleBackToQueue} items={selectedPlaylist.tracks.items.map(o => o.track)} name={selectedPlaylist.name} description={selectedPlaylist.description} />}
+      ) : (        <Grid item xs={12} sm={6}>
+          {selectedPlaylist && (
+            <PlaylistPresenter 
+              onBackToQueue={handleBackToQueue} 
+              items={selectedPlaylist.tracks.items.map(o => o.track)} 
+              name={selectedPlaylist.name} 
+              description={selectedPlaylist.description}
+              onEnhance={handleEnhancePlaylistClick}
+              enhanceMode={mode}
+            />
+          )}
         </Grid>
       )}
       <Grid item xs={12} sm={6}>

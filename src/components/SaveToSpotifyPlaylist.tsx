@@ -95,7 +95,7 @@ export const SaveToSpotifyPlaylist: React.FC<SaveToSpotifyPlaylistProps> = ({
           fontSize: '1.5rem',
           fontWeight: 'bold'
         }}>
-          🎵 Save to Spotify Playlist 🎵
+          Save to Spotify Playlist
         </DialogTitle>
         
         <DialogContent sx={{ pt: 3 }}>

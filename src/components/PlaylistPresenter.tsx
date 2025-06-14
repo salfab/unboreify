@@ -1,17 +1,19 @@
 import React, { useCallback, useState } from 'react';
 import TrackCard from './TrackCard';
-import { Typography, Grid, Collapse, IconButton, useMediaQuery, useTheme } from '@mui/material';
+import { Typography, Grid, Collapse, IconButton, useMediaQuery, useTheme, Tooltip } from '@mui/material';
 import { Track } from '../services/spotifyService';
-import { ExpandLess, ExpandMore, QueueMusic as QueueMusicIcon } from '@mui/icons-material';
+import { ExpandLess, ExpandMore, QueueMusic as QueueMusicIcon, AutoFixHigh as AutoFixHighIcon } from '@mui/icons-material';
 
 interface PlaylistPresenterProps {
     name: string;
     description: string;
     items: Track[];
     onBackToQueue: () => void;
+    onEnhance?: () => void;
+    enhanceMode?: 'extend' | 'alternative';
 }
 
-const PlaylistPresenter: React.FC<PlaylistPresenterProps> = ({ name, items, onBackToQueue }) => {
+const PlaylistPresenter: React.FC<PlaylistPresenterProps> = ({ name, items, onBackToQueue, onEnhance, enhanceMode }) => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [isPlaylistOpen, setIsPlaylistOpen] = useState<boolean>(!isMobile);
@@ -22,11 +24,25 @@ const PlaylistPresenter: React.FC<PlaylistPresenterProps> = ({ name, items, onBa
 
     return (
         <Grid item xs={12} sm={12}>
-            <Typography variant="h4" gutterBottom>
+            <Typography 
+                variant="h4" 
+                gutterBottom
+                display="flex"
+                alignItems="center"
+            >
                 <IconButton onClick={onBackToQueue} size="small" edge="start">
                     <QueueMusicIcon />
                 </IconButton>
                 {name}
+                
+                {onEnhance && (
+                    <Tooltip title="Go all CSI and ENHANCE your playlist ! Add similar songs to make it even better 🔍✨">
+                        <IconButton onClick={onEnhance} size="small" sx={{ marginLeft: 1 }}>
+                            <AutoFixHighIcon sx={{ color: enhanceMode === 'extend' ? 'primary.main' : 'text.primary' }} />
+                        </IconButton>
+                    </Tooltip>
+                )}
+                
                 {isMobile && (
                     <IconButton onClick={toggleIsPlaylistOpen} size="small">
                         {isPlaylistOpen ? <ExpandLess /> : <ExpandMore />}
