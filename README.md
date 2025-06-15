@@ -78,9 +78,44 @@ This application currently uses the [Deej-AI API](https://deej-ai.online/) for a
 However, as per Spotify's terms of use and general restrictions, we will not train the model to expand the capabilities of the existing model, which will be used as-is. 
 
 
-## CORS Handling
+## CORS Handling & API Proxying
 
-We use Netlify and its redirect rules to interact with the Deej-AI API without running into CORS issues. This allows us to proxy API requests seamlessly. To benefit from these redirects during local development, use the `netlify dev` command.
+We use Netlify's redirect functionality to proxy API requests and avoid CORS issues. This setup allows the frontend to make same-origin requests while Netlify handles the external API calls behind the scenes.
+
+### How It Works
+
+1. **Frontend calls**: `/api/deejai/playlist` (same-origin request)
+2. **Netlify proxies to**: `https://deej-ai.online/api/v1/playlist` (external API)
+3. **Browser receives**: API response as if it came from same domain
+
+### Configuration
+
+**netlify.toml** (main configuration):
+
+```toml
+[dev]
+  command = "pnpm run dev"
+  port = 8888                    # Netlify Dev port
+  targetPort = 5173              # Vite dev server port
+
+[[redirects]]
+  from = "/api/deejai/*"
+  to = "https://deej-ai.online/api/v1/:splat"
+  status = 200                   # Proxy (not redirect)
+  force = true                   # Override catch-all routes
+```
+
+**public/_redirects** (fallback for SPA routing):
+
+```plaintext
+/*        /index.html                  200
+```
+
+### Development vs Production
+
+- **Development**: Use `netlify dev` to enable proxy functionality locally
+- **Production**: Netlify Edge automatically handles proxying globally
+- **Benefits**: Same code works in both environments, no CORS issues, API keys hidden from frontend
 
 ## Acknowledgements
 
