@@ -1,3 +1,9 @@
+[dev]
+  command = "pnpm run dev"
+  port = 8888
+  targetPort = 5173
+  autoLaunch = true
+
 [build]
   command = "pnpm build"
   publish = "dist"
@@ -7,8 +13,10 @@
   from = "/api/deejai/*"
   to = "https://deej-ai.online/api/v1/:splat"
   status = 200
+  force = true
 
 [[redirects]]
   from = "/api/setlistfm/*"
   to = "https://api.setlist.fm/rest/1.0/:splat"
   status = 200
+  force = true
