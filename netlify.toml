@@ -1,8 +1,10 @@
 [dev]
   command = "pnpm run dev"
+  base = "src"
   port = 8888
   targetPort = 5173
   autoLaunch = true
+  framework = "vite"
 
 [build]
   command = "pnpm build"
@@ -16,7 +18,12 @@
   force = true
 
 [[redirects]]
-  from = "/api/setlistfm/*"
-  to = "https://api.setlist.fm/rest/1.0/:splat"
+  from = "/api/setlistfm/search/*"
+  to = "https://api.setlist.fm/rest/1.0/search/:splat"
   status = 200
   force = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
