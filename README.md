@@ -1,4 +1,3 @@
-
 # Unboreify
 
 Unboreify is a React application that allows users to log into Spotify, view their name, and manage their playback queue by generating an alternative playlist with AI. The app leverages Spotify's OAuth 2.0 for authentication and provides a seamless experience by handling token refresh automatically. 
@@ -18,6 +17,7 @@ The alternative playlists are generated using AI, by [using a model ](https://gi
 - Play the generated playlist directly on spotify's play queue, without the need to generate an actual temporary playlist on your account.
 - Secure token management with automatic token refresh
 - PWA
+- Comprehensive E2E testing with Cypress
 
 ## Early Development
 
@@ -50,8 +50,8 @@ pnpm install
 3. Create a `.env.local` file in the root directory and add your Spotify Client ID and Redirect URI:
 
 ```plaintext
-VITE_SPOTIFY_CLIENT_ID=your_spotify_client_id
-VITE_SPOTIFY_REDIRECT_URI=http://localhost:3000/callback
+VITE_SPOTIFY_CLIENT_ID=your_spotify_client_id_here
+VITE_SPOTIFY_REDIRECT_URI=http://localhost:5173/callback
 ```
 
 4. Start the development server using Netlify Dev to benefit from redirects and avoid CORS issues:
@@ -153,9 +153,67 @@ If API calls return HTML instead of JSON during development:
 
 1. Ensure `base = "src"` is set in the `[dev]` section of `netlify.toml`
 2. Verify redirects are properly defined in `netlify.toml` with `force = true`
-3. Restart Netlify Dev after modifying redirect rules
-4. Check redirect order - more specific routes should come before catch-all routes
+3. Check redirect order - more specific routes should come before catch-all routes
 4. Restart Netlify Dev after modifying redirect rules
+
+## Testing
+
+This project includes comprehensive end-to-end testing using Cypress with specific support for Spotify OAuth integration.
+
+### Running Tests
+
+**Prerequisites:**
+
+- Development server running: `pnpm dev:netlify`
+- Test credentials configured in `.env.local`
+
+**Quick Start:**
+
+```bash
+# Copy environment template and add your credentials
+cp .env.cypress .env.local
+
+# Run tests using the helper script
+./run-tests.sh
+
+# Or run tests directly
+pnpm test:e2e
+```
+
+**Test Commands:**
+
+```bash
+pnpm cypress:open      # Interactive test runner
+pnpm test:e2e          # Headless test execution
+pnpm test:e2e:headed   # Tests with browser visible
+```
+
+**Test Suites:**
+
+- **Redirections** (`redirections.cy.ts`) - App routing and navigation
+- **OAuth Integration** (`oauth.cy.ts`) - Spotify authentication flows
+- **App Functionality** (`app-functionality.cy.ts`) - Core features
+
+### Test Configuration
+
+Create `.env.local` with your test credentials:
+
+```bash
+CYPRESS_SPOTIFY_TEST_USERNAME=your_test_username
+CYPRESS_SPOTIFY_TEST_PASSWORD=your_test_password
+VITE_SPOTIFY_CLIENT_ID=your_client_id
+# ... other environment variables
+```
+
+**Security Note:** Never commit `.env.local` - it's gitignored for security.
+
+### Testing Approaches
+
+1. **Mock Authentication** (Recommended): Fast testing without real OAuth
+2. **Real OAuth Testing** (Optional): Full integration testing with real credentials
+3. **API Mocking**: Predictable testing with mock Spotify API responses
+
+For detailed testing documentation, see [`cypress/README.md`](cypress/README.md).
 
 ## Acknowledgements
 
