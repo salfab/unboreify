@@ -90,32 +90,72 @@ We use Netlify's redirect functionality to proxy API requests and avoid CORS iss
 
 ### Configuration
 
-**netlify.toml** (main configuration):
+**netlify.toml** (complete configuration):
 
 ```toml
 [dev]
   command = "pnpm run dev"
+  base = "src"                   # Key setting for proper redirect handling
   port = 8888                    # Netlify Dev port
   targetPort = 5173              # Vite dev server port
+  autoLaunch = true
+  framework = "vite"             # Explicit framework detection
 
+[build]
+  command = "pnpm build"
+  publish = "dist"
+  functions = "netlify/functions"
+
+# API proxying redirects
 [[redirects]]
   from = "/api/deejai/*"
   to = "https://deej-ai.online/api/v1/:splat"
-  status = 200                   # Proxy (not redirect)
-  force = true                   # Override catch-all routes
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/setlistfm/search/*"
+  to = "https://api.setlist.fm/rest/1.0/search/:splat"
+  status = 200
+  force = true
+
+# SPA routing - catch-all for React Router
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
 ```
 
-**public/_redirects** (fallback for SPA routing):
+**public/_redirects** (not needed when using netlify.toml):
 
 ```plaintext
-/*        /index.html                  200
+# Empty - all redirects handled by netlify.toml
 ```
+
+**Key Configuration Notes:**
+
+- The `base = "src"` setting in the `[dev]` section is crucial for proper redirect handling
+- Without the correct base path, Netlify Dev may not process redirects properly
+- All redirects can be managed in `netlify.toml` when the base path is correctly configured
 
 ### Development vs Production
 
 - **Development**: Use `netlify dev` to enable proxy functionality locally
+  - **Key**: Set `base = "src"` in `[dev]` section of `netlify.toml`
+  - All redirects work reliably when defined in `netlify.toml` with correct base path
+  - No need for separate `_redirects` file
 - **Production**: Netlify Edge automatically handles proxying globally
 - **Benefits**: Same code works in both environments, no CORS issues, API keys hidden from frontend
+
+### Troubleshooting Redirects
+
+If API calls return HTML instead of JSON during development:
+
+1. Ensure `base = "src"` is set in the `[dev]` section of `netlify.toml`
+2. Verify redirects are properly defined in `netlify.toml` with `force = true`
+3. Restart Netlify Dev after modifying redirect rules
+4. Check redirect order - more specific routes should come before catch-all routes
+4. Restart Netlify Dev after modifying redirect rules
 
 ## Acknowledgements
 
