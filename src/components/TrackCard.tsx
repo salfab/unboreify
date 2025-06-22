@@ -9,7 +9,7 @@ interface TrackCardProps {
 }
 
 const TrackCard: React.FC<TrackCardProps> = ({ track, onRemove }) => (
-  <Card sx={{ display: 'flex', marginBottom: 2, position: 'relative' }}>
+  <Card sx={{ display: 'flex', marginBottom: 2, position: 'relative' }} data-testid="track-card">
     <CardMedia
       component="img"
       sx={{ width: 151 }}
@@ -28,8 +28,7 @@ const TrackCard: React.FC<TrackCardProps> = ({ track, onRemove }) => (
           {track.album.name}
         </Typography>
       </CardContent>
-    </Box>
-    {onRemove && (
+    </Box>    {onRemove && (
       <IconButton
         onClick={() => onRemove(track)}
         sx={{
@@ -46,6 +45,7 @@ const TrackCard: React.FC<TrackCardProps> = ({ track, onRemove }) => (
         }}
         size="small"
         title="Remove track"
+        data-testid="remove-track-button"
       >
         <Close fontSize="small" />
       </IconButton>

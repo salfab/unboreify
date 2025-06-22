@@ -129,23 +129,45 @@ Cypress.Commands.add('mockSpotifyAuth', () => {
     artists: [{ name: 'Test Artist' }],
     album: { name: 'Test Album', images: [{ url: 'https://via.placeholder.com/300' }] },
     duration_ms: 180000,
-    external_urls: { spotify: 'https://open.spotify.com/track/mock' }
+    external_urls: { spotify: 'https://open.spotify.com/track/mock' },
+    uri: 'spotify:track:mock_track_id'
   };
   
-  const mockQueueTrack = {
-    id: 'mock_queue_track_id',
-    name: 'Test Queue Song',
-    artists: [{ name: 'Test Queue Artist' }],
-    album: { name: 'Test Queue Album', images: [{ url: 'https://via.placeholder.com/300' }] },
-    duration_ms: 200000,
-    external_urls: { spotify: 'https://open.spotify.com/track/mock_queue' }
-  };
+  const mockQueueTracks = [
+    {
+      id: 'mock_queue_track_1',
+      name: 'Test Queue Song 1',
+      artists: [{ name: 'Test Queue Artist 1' }],
+      album: { name: 'Test Queue Album 1', images: [{ url: 'https://via.placeholder.com/300' }] },
+      duration_ms: 200000,
+      external_urls: { spotify: 'https://open.spotify.com/track/mock_queue_1' },
+      uri: 'spotify:track:mock_queue_track_1'
+    },
+    {
+      id: 'mock_queue_track_2',
+      name: 'Test Queue Song 2',
+      artists: [{ name: 'Test Queue Artist 2' }],
+      album: { name: 'Test Queue Album 2', images: [{ url: 'https://via.placeholder.com/300' }] },
+      duration_ms: 220000,
+      external_urls: { spotify: 'https://open.spotify.com/track/mock_queue_2' },
+      uri: 'spotify:track:mock_queue_track_2'
+    },
+    {
+      id: 'mock_queue_track_3',
+      name: 'Test Queue Song 3',
+      artists: [{ name: 'Test Queue Artist 3' }],
+      album: { name: 'Test Queue Album 3', images: [{ url: 'https://via.placeholder.com/300' }] },
+      duration_ms: 190000,
+      external_urls: { spotify: 'https://open.spotify.com/track/mock_queue_3' },
+      uri: 'spotify:track:mock_queue_track_3'
+    }
+  ];
   
   cy.intercept('GET', '**/v1/me/player/queue', { 
     statusCode: 200, 
     body: { 
       currently_playing: mockTrack, 
-      queue: [mockQueueTrack] 
+      queue: mockQueueTracks 
     } 
   }).as('getQueue');
   cy.intercept('GET', '**/v1/me/playlists', { 

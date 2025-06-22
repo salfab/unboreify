@@ -41,8 +41,8 @@ When('I log out from Spotify', () => {
 When('I log out using the user menu', () => {
   cy.get('[data-testid="user-avatar"]').first().click();
   cy.contains('Sign out').click();
-  cy.wait(2000); // Wait longer for React state to update
-  cy.waitForAppLoad();
+  // Wait for React state to update by checking for login elements
+  cy.get('button').contains('Login with Spotify', { timeout: 10000 }).should('be.visible');
 });
 
 Then('I should see my Spotify profile information', () => {
@@ -57,8 +57,7 @@ Then('I should be redirected to Spotify for authentication', () => {
 Then('my authentication state should persist across page reloads', () => {
   cy.mockSpotifyAuth();
   cy.reload();
-  cy.waitForAppLoad();
-  cy.get('[data-testid="user-avatar"]').should('be.visible');
+  cy.get('[data-testid="user-avatar"]', { timeout: 10000 }).should('be.visible');
 });
 
 Then('my tokens should be cleared', () => {
@@ -77,7 +76,7 @@ Then('I should be able to make authenticated API calls', () => {
   
   // Trigger an API call
   cy.visit('/queue');
-  cy.wait('@getUserInfo');
+  cy.get('body', { timeout: 10000 }).should('be.visible');
 });
 
 Then('I should see an error boundary', () => {

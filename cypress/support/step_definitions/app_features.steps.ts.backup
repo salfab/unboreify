@@ -274,7 +274,7 @@ When('I select a concert from the results', () => {
   cy.get('[data-testid="concert-results"]', { timeout: 15000 }).should('be.visible');
   
   // Add some extra wait time for the component to fully render
-  cy.get("body", { timeout: 8000 }).should("be.visible");
+  cy.wait(2000);
   
   // Click on the concert results dropdown to open it
   cy.get('[data-testid="concert-results"]').click();
@@ -286,7 +286,7 @@ When('I select a concert from the results', () => {
   cy.get('[data-testid="concert-result"]').first().click();
   
   // Wait longer for the selection to be processed and the setlist to be populated
-  cy.get("body", { timeout: 15000 }).should("be.visible");
+  cy.wait(5000);
 });
 
 Then('I should see concert search results', () => {
@@ -299,7 +299,7 @@ Then('I should see concert search results', () => {
   });
   
   // Wait a bit more for the setlist to be populated
-  cy.get("body", { timeout: 8000 }).should("be.visible");
+  cy.wait(2000);
   
   // Verify that the setlist textarea has been automatically populated with songs from the selected concert
   // Use a more flexible approach - check if any of the expected songs are present
@@ -333,7 +333,7 @@ When('I generate a playlist', () => {
     if (!url.includes('/queue')) {
       cy.visit('/queue');
       cy.waitForAppLoad();
-      cy.get("body", { timeout: 10000 }).should("be.visible");
+      cy.wait(3000);
     }
   });
   
@@ -390,7 +390,7 @@ When('I change the playlist multiplier to {int}', (multiplier: number) => {
   });
   
   // Wait for the change to be applied
-  cy.get("body", { timeout: 5000 }).should("be.visible");
+  cy.wait(1000);
 });
 
 Then('I should see playlist generation options', () => {
@@ -411,12 +411,12 @@ Then('I should see playlist generation options', () => {
   cy.url().should('include', '/queue');
   
   // Wait for authentication to settle and queue data to load
-  cy.get("body", { timeout: 10000 }).should("be.visible");
+  cy.wait(3000);
   
   // Force a refresh to reset any previous test state
   cy.reload();
   cy.waitForAppLoad();
-  cy.get("body", { timeout: 8000 }).should("be.visible");
+  cy.wait(2000);
   
   // Check for either "Queue" or "Currently Playing" heading to ensure page rendered
   cy.get('h4').should(($h4s) => {
@@ -443,23 +443,16 @@ Then('I should see queue operations', () => {
   cy.waitForAppLoad();
   
   // Wait for page to be fully loaded
-  cy.get("body", { timeout: 15000 }).should("be.visible");
+  cy.wait(5000);
   
-  // Wait for any loading to complete - be more flexible about loading indicators
-  cy.get('body').then(($body) => {
-    // Instead of waiting for specific loading indicators to disappear,
-    // just wait for meaningful content to appear
-    cy.log('Checking for meaningful page content instead of waiting for loaders');
-  });
-  
-  // Wait for meaningful content to appear
-  cy.get("body", { timeout: 10000 }).should("be.visible");
+  // Wait for any loading to complete
+  cy.get('[data-testid="loading-spinner"]', { timeout: 15000 }).should('not.exist');
   
   // Look for the Queue section first
   cy.get('h4').contains('Queue').should('be.visible');
   
   // Wait for component state to settle after page load
-  cy.get("body", { timeout: 10000 }).should("be.visible");
+  cy.wait(3000);
   
   // Check current page state and handle different scenarios
   cy.get('body').then(($body) => {
@@ -474,7 +467,7 @@ Then('I should see queue operations', () => {
       cy.mockSpotifyAuth();
       cy.visit('/queue');
       cy.waitForAppLoad();
-      cy.get("body", { timeout: 15000 }).should("be.visible");
+      cy.wait(5000);
       // Look for Queue heading again after reload
       cy.get('h4').contains('Queue').should('be.visible');
     }
@@ -482,14 +475,14 @@ Then('I should see queue operations', () => {
     // Check if we're in a progress state
     if (pageText.includes('Progress') && pageText.includes('Validating')) {
       cy.log('Page is in progress state, waiting for completion');
-      cy.get("body", { timeout: 20000 }).should("be.visible");
+      cy.wait(15000);
       // After progress, perform hard reset
       cy.clearAllLocalStorage();
       cy.clearAllSessionStorage(); 
       cy.mockSpotifyAuth();
       cy.visit('/queue');
       cy.waitForAppLoad();
-      cy.get("body", { timeout: 15000 }).should("be.visible");
+      cy.wait(5000);
       // Look for Queue heading again after reload
       cy.get('h4').contains('Queue').should('be.visible');
     }
@@ -563,14 +556,14 @@ When('I open the settings dialog', () => {
   cy.get('[data-testid="user-avatar"]').first().click();
   
   // Wait for the menu to appear and be stable
-  cy.get("body", { timeout: 5000 }).should("be.visible");
+  cy.wait(1000);
   cy.get('[data-testid="settings-menu-item"]', { timeout: 10000 }).should('be.visible');
   cy.get('[data-testid="settings-menu-item"]').click();
   
   // Wait for the dialog to open and render
   cy.get('[data-testid="settings-dialog"]', { timeout: 10000 }).should('be.visible');
   // Give the dialog content extra time to fully render
-  cy.get("body", { timeout: 5000 }).should("be.visible");
+  cy.wait(1000);
 });
 
 When('I close the settings dialog', () => {
@@ -586,7 +579,7 @@ Then('I should see the settings dialog', () => {
   cy.get('[data-testid="settings-dialog"]', { timeout: 10000 }).should('be.visible');
   
   // Wait for the dialog content to fully render
-  cy.get("body", { timeout: 10000 }).should("be.visible");
+  cy.wait(3000);
   
   // Debug: Check what's actually in the dialog
   cy.get('[data-testid="settings-dialog"]').within(() => {
@@ -624,13 +617,13 @@ Then('I should see the settings dialog', () => {
     else {
       // Force the dialog to close and reopen to try again
       cy.get('[data-testid="settings-close-button"]').click();
-      cy.get("body", { timeout: 5000 }).should("be.visible");
+      cy.wait(1000);
       
       // Reopen the dialog
       cy.get('[data-testid="user-avatar"]').first().click();
-      cy.get("body", { timeout: 5000 }).should("be.visible");
+      cy.wait(1000);
       cy.get('[data-testid="settings-menu-item"]').click();
-      cy.get("body", { timeout: 8000 }).should("be.visible");
+      cy.wait(2000);
       
       // Try again
       cy.get('[data-testid="settings-dialog"]').should('be.visible');
@@ -678,7 +671,7 @@ When('I trigger a network request', () => {
   });
   
   // Wait for the error to propagate and any error boundaries to trigger
-  cy.get("body", { timeout: 15000 }).should("be.visible");
+  cy.wait(5000);
 });
 
 Then('I should see an error message', () => {
@@ -766,7 +759,7 @@ When('I click the clear queue button', () => {
   cy.get('[data-testid="clear-queue-button"]').click();
   
   // Wait a moment for the action to complete
-  cy.get("body", { timeout: 5000 }).should("be.visible");
+  cy.wait(1000);
 });
 
 Then('the queue should be empty', () => {
@@ -1224,7 +1217,7 @@ When('I remove a track from the queue', () => {
   cy.get('[data-testid="track-card"]', { timeout: 10000 }).should('be.visible');
   
   // Wait a bit more for the component to fully render
-  cy.get("body", { timeout: 5000 }).should("be.visible");
+  cy.wait(1000);
   
   // Try to find and click remove buttons, with fallback to clear queue
   cy.get('body').then($body => {
@@ -1262,7 +1255,7 @@ When('I remove a track from the alternative playlist', () => {
   });
   
   // Wait for the track to be removed from the UI
-  cy.get("body", { timeout: 5000 }).should("be.visible");
+  cy.wait(1000);
 });
 
 Given('I have a generated alternative playlist', () => {
@@ -1421,36 +1414,26 @@ Given('I have a generated alternative playlist', () => {
     } else {
       // Alternative: just verify that the alternative playlist section appears
       cy.log('Generate playlist button not found, checking for existing alternative playlist');
-      cy.get("body", { timeout: 8000 }).should("be.visible");
+      cy.wait(2000);
     }
   });
   
   // Wait for any API calls to complete - but don't fail if they don't happen
-  cy.get("body", { timeout: 8000 }).should("be.visible");
+  cy.wait(2000); // Simple time-based wait instead of API wait
   cy.log('✓ Waited for API calls to complete');
   
-  // Wait for the alternative playlist section to appear - be more flexible about the text
-  cy.get('body', { timeout: 15000 }).should(($body) => {
-    const text = $body.text();
-    const hasAlternativeContent = text.includes('Alternative') || text.includes('playlist') || text.includes('unboreified') || text.includes('tracks');
-    expect(hasAlternativeContent).to.be.true;
-  });
+  // Wait for the alternative playlist section to appear
+  cy.contains('Alternative Playlist', { timeout: 15000 }).should('be.visible');
   
-  // Give time for UI to render and check for actual content
-  cy.get("body", { timeout: 10000 }).should("be.visible");
+  // Wait for API calls to complete 
+  cy.wait('@searchTracks', { timeout: 15000 });
+  cy.wait('@generatePlaylist', { timeout: 15000 });
   
-  // Look for track cards or any playlist content
-  cy.get('body').then(($body) => {
-    // Check if we have either track cards or alternative playlist container
-    if ($body.find('[data-testid="track-card"]').length > 0) {
-      cy.get('[data-testid="track-card"]').should('have.length.greaterThan', 0);
-    } else if ($body.find('[data-testid="alternative-playlist-container"]').length > 0) {
-      cy.get('[data-testid="alternative-playlist-container"]').should('be.visible');
-    } else {
-      // Fallback - just verify the page loaded properly
-      cy.log('Alternative playlist may not be generated yet');
-    }
-  });
+  // Give time for UI to render
+  cy.wait(3000);
+  
+  // Verify we have track cards in the alternative playlist
+  cy.get('[data-testid="track-card"]', { timeout: 15000 }).should('have.length.greaterThan', 0);
 });
 
 When('I remove a track from the alternative playlist', () => {
@@ -1463,7 +1446,7 @@ When('I remove a track from the alternative playlist', () => {
   });
   
   // Wait for the removal to complete
-  cy.get("body", { timeout: 5000 }).should("be.visible");
+  cy.wait(1000);
 });
 
 When('I remove multiple tracks from the queue', () => {
@@ -1471,7 +1454,7 @@ When('I remove multiple tracks from the queue', () => {
   cy.get('[data-testid="track-card"]', { timeout: 10000 }).should('have.length.greaterThan', 0);
   
   // Wait a bit more for components to fully render
-  cy.get("body", { timeout: 5000 }).should("be.visible");
+  cy.wait(1000);
   
   // Check if remove buttons are available with body approach to avoid throwing error
   cy.get('body').then($body => {
@@ -1481,7 +1464,7 @@ When('I remove multiple tracks from the queue', () => {
       cy.log(`Found ${removeButtons.length} remove buttons, removing first two tracks`);
       cy.get('[data-testid="remove-track-button"]').first().click();
       
-      cy.get("body", { timeout: 3000 }).should("be.visible");
+      cy.wait(500);
       cy.get('[data-testid="remove-track-button"]').first().click();
     } else {
       // Fallback to clear queue button (simulates multiple removal)
@@ -1501,7 +1484,7 @@ When('I remove multiple tracks from the alternative playlist', () => {
   });
   
   // Remove second track
-  cy.get("body", { timeout: 3000 }).should("be.visible");
+  cy.wait(500);
   cy.get('[data-testid="alternative-playlist"] [data-testid="track-card"], [data-testid="track-card"]').first().within(() => {
     cy.get('[data-testid="remove-track-button"]').click();
   });
@@ -1518,7 +1501,7 @@ Then('none of the removed tracks should be included in the playlist generation r
   // that the playlist generation call doesn't include the removed track data
   
   // Wait for any playlist generation API calls
-  cy.get("body", { timeout: 8000 }).should("be.visible");
+  cy.wait(2000);
   
   // Check that the alternative playlist section exists and contains tracks
   cy.contains('Alternative Playlist').should('be.visible');
@@ -1534,7 +1517,7 @@ Then('the track should be visible in the queue again', () => {
   // Since we're using mock data and simulated undo operations, we check for track visibility
   
   // Wait for the undo operation to complete
-  cy.get("body", { timeout: 5000 }).should("be.visible");
+  cy.wait(1000);
   
   // Check that tracks are visible in the queue
   cy.get('[data-testid="track-card"]', { timeout: 10000 }).should('have.length.greaterThan', 0);
@@ -1550,22 +1533,11 @@ Then('the track should be visible in the queue again', () => {
   cy.log('✓ Track is visible in queue after undo');
 });
 
+// Additional missing step definitions
 When('I switch to extend mode', () => {
   // Look for the mode selector button in the Alternative Playlist section
   cy.get('[data-testid="playlist-mode-selector"]').click();
   cy.log('✓ Switched to extend mode');
-});
-
-When('I set the playlist to extend mode', () => {
-  // Look for the mode selector button in the Alternative Playlist section
-  cy.get('[data-testid="playlist-mode-selector"]').click();
-  cy.log('✓ Set playlist to extend mode');
-});
-
-When('I enable playlist extension mode', () => {
-  // Look for the mode selector button in the Alternative Playlist section
-  cy.get('[data-testid="playlist-mode-selector"]').click();
-  cy.log('✓ Enabled playlist extension mode');
 });
 
 When('I remove all tracks from the queue', () => {
@@ -1604,7 +1576,7 @@ Then('the removed track should not be included in the playlist generation reques
   // that the playlist generation call doesn't include the removed track data
   
   // Wait for any playlist generation API calls
-  cy.get("body", { timeout: 8000 }).should("be.visible");
+  cy.wait(2000);
   
   // Check that the alternative playlist section exists and contains tracks
   cy.contains('Alternative Playlist').should('be.visible');
@@ -1617,7 +1589,7 @@ Then('the removed track should not be included in the playlist generation reques
 
 Then('the removed track should not be included in the enhancement request', () => {
   // Similar to playlist generation verification - check that enhancement proceeds without removed tracks
-  cy.get("body", { timeout: 8000 }).should("be.visible");
+  cy.wait(2000);
   cy.contains('Alternative Playlist').should('be.visible');
   cy.get('[data-testid="track-card"]').should('have.length.greaterThan', 0);
   cy.log('✓ Enhancement completed without removed tracks');
@@ -1642,7 +1614,7 @@ Then('I should see a message about empty queue or a default playlist', () => {
 
 Then('the removed track should still not be visible in the queue', () => {
   // Verify that after page refresh, removed tracks are still not visible
-  cy.get("body", { timeout: 8000 }).should("be.visible");
+  cy.wait(2000);
   
   // Check that if tracks are present, they don't include the specific removed track
   cy.get('body').then($body => {
@@ -1660,7 +1632,7 @@ Then('the removed track should still not be visible in the queue', () => {
 // Final missing step definition
 Then('the track should be included in the playlist generation request', () => {
   // This step verifies that after undoing a removal, the track is included in playlist generation
-  cy.get("body", { timeout: 8000 }).should("be.visible");
+  cy.wait(2000);
   cy.contains('Alternative Playlist').should('be.visible');
   cy.get('[data-testid="track-card"]').should('have.length.greaterThan', 0);
   cy.log('✓ Track included in playlist generation after undo');

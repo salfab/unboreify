@@ -1,0 +1,12 @@
+{
+  "default": {
+    "paths": ["cypress/e2e/features/**/*.feature"],
+    "require": ["cypress/support/step_definitions/**/*.ts"],
+    "requireModule": ["ts-node/register"],
+    "format": ["progress", "json:reports/cucumber-report.json"],
+    "formatOptions": {
+      "snippetInterface": "async-await"
+    },
+    "parallel": 1
+  }
+}

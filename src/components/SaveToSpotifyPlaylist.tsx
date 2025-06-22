@@ -10,7 +10,8 @@ import {
   Button, 
   Box,
   Typography,
-  CircularProgress
+  CircularProgress,
+  Alert
 } from '@mui/material';
 import { PlaylistAdd as PlaylistAddIcon } from '@mui/icons-material';
 import { Track } from '../services/spotifyService';
@@ -27,28 +28,31 @@ export const SaveToSpotifyPlaylist: React.FC<SaveToSpotifyPlaylistProps> = ({
   defaultPlaylistName,
   onSavePlaylist,
   sx = {}
-}) => {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+}) => {  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [playlistName, setPlaylistName] = useState(defaultPlaylistName);
   const [isSaving, setIsSaving] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   const handleOpenDialog = () => {
     setPlaylistName(defaultPlaylistName);
     setIsDialogOpen(true);
   };
-
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setIsSaving(false);
+    setSuccessMessage('');
   };
-
   const handleSave = async () => {
     if (!playlistName.trim()) return;
     
     setIsSaving(true);
     try {
       await onSavePlaylist(playlistName.trim(), tracks);
-      handleCloseDialog();
+      setSuccessMessage('Playlist saved successfully');
+      setIsSaving(false);
+      setTimeout(() => {
+        handleCloseDialog();
+      }, 2000);
     } catch (error) {
       console.error('Error saving playlist:', error);
       setIsSaving(false);
@@ -60,7 +64,7 @@ export const SaveToSpotifyPlaylist: React.FC<SaveToSpotifyPlaylistProps> = ({
         <IconButton 
           onClick={handleOpenDialog} 
           size="small" 
-          data-testid="save-playlist-button"
+          data-testid="save-to-spotify-button"
           sx={{ 
             marginLeft: 1, 
             color: 'success.main',
@@ -97,13 +101,17 @@ export const SaveToSpotifyPlaylist: React.FC<SaveToSpotifyPlaylistProps> = ({
         }}>
           Save to Spotify Playlist
         </DialogTitle>
-        
-        <DialogContent sx={{ pt: 3 }}>
+          <DialogContent sx={{ pt: 3 }}>
+          {successMessage && (
+            <Alert severity="success" sx={{ mb: 2 }}>
+              {successMessage}
+            </Alert>
+          )}
+          
           <Typography variant="body1" sx={{ mb: 2, color: 'text.secondary' }}>
             Give your unborified playlist a name that rocks! 🚀
           </Typography>
-          
-          <TextField
+            <TextField
             fullWidth
             label="Playlist Name"
             value={playlistName}
@@ -112,6 +120,7 @@ export const SaveToSpotifyPlaylist: React.FC<SaveToSpotifyPlaylistProps> = ({
             variant="outlined"
             autoFocus
             disabled={isSaving}
+            data-testid="playlist-name-input"
             sx={{
               '& .MuiOutlinedInput-root': {
                 '&:hover fieldset': {
@@ -142,11 +151,11 @@ export const SaveToSpotifyPlaylist: React.FC<SaveToSpotifyPlaylistProps> = ({
           >
             Cancel
           </Button>
-          
-          <Button
+            <Button
             onClick={handleSave}
             disabled={!playlistName.trim() || isSaving}
             variant="contained"
+            data-testid="confirm-save-button"
             startIcon={isSaving ? <CircularProgress size={20} color="inherit" /> : <PlaylistAddIcon />}
             sx={{
               background: 'linear-gradient(135deg, #1DB954, #1ed760)',
