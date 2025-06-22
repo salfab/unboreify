@@ -121,19 +121,62 @@ Cypress.Commands.add('mockSpotifyAuth', () => {
   
   // Intercept Spotify API calls and return mock data
   cy.intercept('GET', '**/v1/me', { statusCode: 200, body: mockUser }).as('getCurrentUser');
+  
+  // Mock queue with sample tracks
+  const mockTrack = {
+    id: 'mock_track_id',
+    name: 'Test Song',
+    artists: [{ name: 'Test Artist' }],
+    album: { name: 'Test Album', images: [{ url: 'https://via.placeholder.com/300' }] },
+    duration_ms: 180000,
+    external_urls: { spotify: 'https://open.spotify.com/track/mock' }
+  };
+  
+  const mockQueueTrack = {
+    id: 'mock_queue_track_id',
+    name: 'Test Queue Song',
+    artists: [{ name: 'Test Queue Artist' }],
+    album: { name: 'Test Queue Album', images: [{ url: 'https://via.placeholder.com/300' }] },
+    duration_ms: 200000,
+    external_urls: { spotify: 'https://open.spotify.com/track/mock_queue' }
+  };
+  
   cy.intercept('GET', '**/v1/me/player/queue', { 
     statusCode: 200, 
     body: { 
-      currently_playing: null, 
-      queue: [] 
+      currently_playing: mockTrack, 
+      queue: [mockQueueTrack] 
     } 
   }).as('getQueue');
   cy.intercept('GET', '**/v1/me/playlists', { 
     statusCode: 200, 
     body: { 
-      items: [] 
+      items: [{
+        id: 'mock_playlist_id',
+        name: 'Test Playlist',
+        tracks: { total: 10 },
+        external_urls: { spotify: 'https://open.spotify.com/playlist/mock' }
+      }] 
     } 
   }).as('getPlaylists');
+  
+  // Mock player state
+  cy.intercept('GET', '**/v1/me/player', { 
+    statusCode: 200, 
+    body: { 
+      is_playing: false,
+      item: mockTrack,
+      device: { id: 'mock_device', name: 'Test Device' }
+    } 
+  }).as('getPlaybackState');
+  
+  // Mock devices
+  cy.intercept('GET', '**/v1/me/player/devices', { 
+    statusCode: 200, 
+    body: { 
+      devices: [{ id: 'mock_device', name: 'Test Device', is_active: true }] 
+    } 
+  }).as('getDevices');
   
   cy.visit('/');
   cy.waitForAppLoad();

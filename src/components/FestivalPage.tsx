@@ -110,9 +110,7 @@ const FestivalPage: FC<FestivalPageProps> = () => {
       </Typography>
       <Typography variant="subtitle1" gutterBottom>
         Is this festival/club worth it?
-      </Typography>
-
-      {/* Multiline TextField for Artist Names */}
+      </Typography>      {/* Multiline TextField for Artist Names */}
       <TextField
         label="Artists"
         multiline
@@ -121,14 +119,14 @@ const FestivalPage: FC<FestivalPageProps> = () => {
         onChange={handleInputChange} // Update state on input change
         fullWidth
         sx={{ marginBottom: 2 }}
-      />
-
-      {/* Button to Concatenate and Navigate */}
+        inputProps={{ 'data-testid': 'artist-input-0' }}
+      />      {/* Button to Concatenate and Navigate */}
       <Button
         variant="contained"
         color="primary"
         onClick={handleNavigate}
         sx={{ marginBottom: 2 }}
+        data-testid="add-artist-button"
       >
         Go to FestiClub with these Artists
       </Button>

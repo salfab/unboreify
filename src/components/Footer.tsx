@@ -2,9 +2,8 @@ import React from 'react';
 import { Container, Box, Typography, Link, IconButton } from '@mui/material';
 import GitHubIcon from '@mui/icons-material/GitHub';
 
-const Footer: React.FC = () => {
-  return (
-    <footer>
+const Footer: React.FC = () => {  return (
+    <footer data-testid="footer">
       <Container maxWidth="md">
         <Box
           display="flex"

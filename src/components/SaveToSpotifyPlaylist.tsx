@@ -56,11 +56,11 @@ export const SaveToSpotifyPlaylist: React.FC<SaveToSpotifyPlaylistProps> = ({
   };
 
   return (
-    <>
-      <Tooltip title="Save this masterpiece to Spotify before it gets too cool for school! 🎵✨">
+    <>      <Tooltip title="Save this masterpiece to Spotify before it gets too cool for school! 🎵✨">
         <IconButton 
           onClick={handleOpenDialog} 
           size="small" 
+          data-testid="save-playlist-button"
           sx={{ 
             marginLeft: 1, 
             color: 'success.main',

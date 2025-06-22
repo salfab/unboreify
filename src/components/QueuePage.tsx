@@ -275,10 +275,9 @@ const QueuePage: React.FC = () => {
         <Grid item xs={12}>
           <Typography variant="h4" gutterBottom>
             Progress
-          </Typography>
-          <Box>
+          </Typography>          <Box>
             <Typography variant="body1">{progress.phase}</Typography>
-            <LinearProgress variant="determinate" value={progress.percentage} />
+            <LinearProgress variant="determinate" value={progress.percentage} data-testid="loading-spinner" />
           </Box>
         </Grid>
       )}
@@ -308,10 +307,8 @@ const QueuePage: React.FC = () => {
               </Box>
             </Tooltip>
           </Box>
-          <Box display="flex" flexDirection={'row'} alignItems="center" justifyContent="center" mt={2}>
-
-            <Tooltip title="Refresh currently playing queue">
-              <IconButton onClick={() => fetchQueue(false)} size="small" sx={{ marginLeft: 1 }}>
+          <Box display="flex" flexDirection={'row'} alignItems="center" justifyContent="center" mt={2}>            <Tooltip title="Refresh currently playing queue">
+              <IconButton onClick={() => fetchQueue(false)} size="small" sx={{ marginLeft: 1 }} data-testid="refresh-button">
                 <Box display={'flex'} textAlign={'center'} flexDirection={'column'} alignItems={'center'}>
                   <RefreshIcon />
                   <Typography variant='caption' >
@@ -343,9 +340,8 @@ const QueuePage: React.FC = () => {
                   </Typography>
                 </Box>
               </IconButton>
-            </Tooltip>
-            <Tooltip title="Unboreify my queue : replace all the songs with similar ones." >
-              <IconButton onClick={() => fetchQueue(true)} size="small" sx={{ marginLeft: 1 }}>
+            </Tooltip>            <Tooltip title="Unboreify my queue : replace all the songs with similar ones." >
+              <IconButton onClick={() => fetchQueue(true)} size="small" sx={{ marginLeft: 1 }} data-testid="generate-playlist-button">
                 <Box display={'flex'} textAlign={'center'} flexDirection={'column'} alignItems={'center'}>
 
                   <AutoModeIcon />
@@ -371,14 +367,20 @@ const QueuePage: React.FC = () => {
               <>Play music to get started</>
             )}
           </Grid>
-          <Grid item xs={12} sm={6}>
-            <Typography variant="h4" gutterBottom>
+          <Grid item xs={12} sm={6}>            <Typography variant="h4" gutterBottom>
               Queue
               {/* TODO create a variable for this to make it more clear */}
               {((isComplete && !showProcessMessageBar) || !isComplete) &&
                 <>
+                  <Tooltip title="Clear queue">
+                    <IconButton onClick={() => setQueueData(prev => prev ? {...prev, queue: []} : prev)} size="small" sx={{ marginLeft: 1 }} data-testid="clear-queue-button">
+                      <Box display={'flex'} textAlign={'center'} flexDirection={'column'} alignItems={'center'}>
+                        <Typography variant='caption'>Clear</Typography>
+                      </Box>
+                    </IconButton>
+                  </Tooltip>
                   <Tooltip title="Refresh currently playing queue">
-                    <IconButton onClick={() => fetchQueue(false)} size="small" sx={{ marginLeft: 1 }}>
+                    <IconButton onClick={() => fetchQueue(false)} size="small" sx={{ marginLeft: 1 }} data-testid="refresh-button">
                       <RefreshIcon />
                     </IconButton>
                   </Tooltip>
@@ -400,9 +402,8 @@ const QueuePage: React.FC = () => {
                     }} size="small" sx={{ marginLeft: 1 }}>
                       <AutoFixHighIcon />
                     </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Unboreify my queue : replace all the songs with similar ones." >
-                    <IconButton onClick={() => fetchQueue(true)} size="small" sx={{ marginLeft: 1 }}>
+                  </Tooltip>                  <Tooltip title="Unboreify my queue : replace all the songs with similar ones." >
+                    <IconButton onClick={() => fetchQueue(true)} size="small" sx={{ marginLeft: 1 }} data-testid="generate-playlist-button">
                       <AutoModeIcon />
                     </IconButton>
                   </Tooltip>
@@ -445,9 +446,8 @@ const QueuePage: React.FC = () => {
           display="flex"
           alignItems="center"
         >
-          Alternative Playlist
-          <Tooltip title="You like your alternative playlist, but you wanted more ? Double the fun by doubling its size !">
-            <IconButton onClick={handleEnhanceClick} size="small" sx={{ marginLeft: 1 }}>
+          Alternative Playlist          <Tooltip title="You like your alternative playlist, but you wanted more ? Double the fun by doubling its size !">
+            <IconButton onClick={handleEnhanceClick} size="small" sx={{ marginLeft: 1 }} data-testid="playlist-mode-selector">
               <AutoAwesomeIcon sx={{ color: mode === 'extend' ? 'primary.main' : 'text.primary' }} />
             </IconButton>
           </Tooltip>

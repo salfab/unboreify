@@ -37,10 +37,16 @@ const Settings: FC<SettingsProps> = ({ open, onClose, currentPlaylistMultiplier,
     };
 
     const openPopover = Boolean(anchorEl);
-    const popoverId = openPopover ? 'info-popover' : undefined;
-
-    return (
-        <Dialog open={open} onClose={onClose} fullWidth>
+    const popoverId = openPopover ? 'info-popover' : undefined;    return (
+        <Dialog 
+            open={open} 
+            onClose={onClose} 
+            fullWidth 
+            data-testid="settings-dialog"
+            BackdropProps={{
+                'data-testid': 'settings-backdrop'
+            }}
+        >
             <DialogTitle>Settings</DialogTitle>
             <DialogContent>
                 <Box display="flex" alignItems="center">
@@ -80,6 +86,7 @@ const Settings: FC<SettingsProps> = ({ open, onClose, currentPlaylistMultiplier,
                     marks
                     min={1}
                     max={5}
+                    data-testid="playlist-multiplier-slider"
                 />
                 <Box mt={2}>
                     <Typography align="center" variant="subtitle1">
@@ -88,7 +95,7 @@ const Settings: FC<SettingsProps> = ({ open, onClose, currentPlaylistMultiplier,
                 </Box>
             </DialogContent>
             <DialogActions>
-                <Button onClick={onClose}>Close</Button>
+                <Button onClick={onClose} data-testid="settings-close-button">Close</Button>
             </DialogActions>
         </Dialog>
     );

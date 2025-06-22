@@ -203,10 +203,7 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
       </Typography>
       <Typography variant="subtitle1" gutterBottom>
         Build a playlist from a Concert Setlist
-      </Typography>
-
-
-      {/* Artist Autocomplete */}
+      </Typography>      {/* Artist Autocomplete */}
       <Autocomplete
         freeSolo
         options={artists}
@@ -219,26 +216,23 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
         }}
         onInputChange={handleArtistInputChange}
         onChange={(e, v) => handleArtistSelect(e, v as Artist | null)} 
-        renderInput={(params) => <TextField {...params} label="Search Artist" fullWidth />}
+        renderInput={(params) => <TextField {...params} label="Search Artist" fullWidth inputProps={{ ...params.inputProps, 'data-testid': 'artist-search-input' }} />}
         isOptionEqualToValue={(option, value) => option.mbid === value.mbid}
         sx={{ marginBottom: 2 }}
-      />
-
-      {/* Setlist Select Box */}
+        data-testid="artist-suggestions"
+      />      {/* Setlist Select Box */}
       {setlists.length > 0 && (
         <FormControl fullWidth sx={{ marginBottom: 2 }}>
           <InputLabel>Select Setlist</InputLabel>
-          <Select value={selectedSetlist?.id || ''} onChange={(e) => handleSetlistSelect(e)}>
+          <Select value={selectedSetlist?.id || ''} onChange={(e) => handleSetlistSelect(e)} data-testid="concert-results">
             {setlists.map((setlist) => (
-              <MenuItem key={setlist.id} value={setlist.id}>
+              <MenuItem key={setlist.id} value={setlist.id} data-testid="concert-result">
                 {setlist.venue.name} - {setlist.eventDate} ({setlist.sets.set.flatMap(s => s.song).length} tracks)
               </MenuItem>
             ))}
           </Select>
         </FormControl>
-      )}
-
-      {/* Setlist (editable for manual modification) */}
+      )}      {/* Setlist (editable for manual modification) */}
       <TextField
         label="Setlist (One song per line)"
         multiline
@@ -247,6 +241,7 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
         onChange={(e) => setSetlistInput(e.target.value)}
         fullWidth
         sx={{ marginBottom: 2 }}
+        data-testid="setlist-textarea"
       />
 
       {/* Manually Build Setlist Button */}

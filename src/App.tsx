@@ -55,30 +55,26 @@ const App: React.FC = () => {
     setMusicMenuAnchorEl(null); // Close live music menu
   }, []);
 
-  return (
-    <Router>
+  return (    <Router>
       <AppBar position="static">
-        <Toolbar>
+        <Toolbar data-testid="navigation">
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             Unboreify
           </Typography>
           {token ? (
-            <>
-              {isMobile ? (
+            <>              {isMobile ? (
                 <>
-                  <IconButton color="inherit" component={Link} to="/">
-                    <HomeIcon />
+                  <IconButton color="inherit" component={Link} to="/" data-testid="nav-home">
+                    <HomeIcon data-testid="HomeIcon" />
                   </IconButton>
-                  <IconButton color="inherit" component={Link} to="/queue">
-                    <QueueIcon />
+                  <IconButton color="inherit" component={Link} to="/queue" data-testid="mobile-queue-button">
+                    <QueueIcon data-testid="QueueMusicIcon" />
                   </IconButton>
 
                   {/* Live Music Features Button */}
-                  <IconButton color="inherit" onClick={handleMusicMenu}>
-                    <LiveMusicIcon />
-                  </IconButton>
-
-                  {/* Live Music Menu */}
+                  <IconButton color="inherit" onClick={handleMusicMenu} data-testid="mobile-music-button">
+                    <LiveMusicIcon data-testid="SpeakerGroupIcon" />
+                  </IconButton>{/* Live Music Menu */}
                   <Menu
                     anchorEl={musicMenuAnchorEl}
                     open={openMusicMenu}
@@ -92,10 +88,10 @@ const App: React.FC = () => {
                       horizontal: 'right',
                     }}
                   >
-                    <MenuItem component={Link} to="/festiclub" onClick={handleClose}>
+                    <MenuItem component={Link} to="/festiclub" onClick={handleClose} data-testid="festiclub-option">
                       FestiClub
                     </MenuItem>
-                    <MenuItem component={Link} to="/setlist" onClick={handleClose}>
+                    <MenuItem component={Link} to="/setlist" onClick={handleClose} data-testid="setlist-option">
                       Concert Setlist
                     </MenuItem>
                   </Menu>
@@ -104,11 +100,9 @@ const App: React.FC = () => {
                     <SettingsIcon />
                   </IconButton>
 
-                  <IconButton color="inherit" onClick={handleMenu}>
+                  <IconButton color="inherit" onClick={handleMenu} data-testid="user-avatar">
                     <Avatar alt={currentUser?.display_name} src={currentUser?.images[0]?.url} />
-                  </IconButton>
-
-                  {/* User Profile Menu */}
+                  </IconButton>                  {/* User Profile Menu */}
                   <Menu
                     anchorEl={anchorEl}
                     open={open}
@@ -126,27 +120,24 @@ const App: React.FC = () => {
                       <ListItemText primary={currentUser?.display_name} />
                     </MenuItem>
 
-                    <MenuItem onClick={() => logOut()}>Sign out</MenuItem>
+                    <MenuItem onClick={() => logOut()} data-testid="logout-menu-item">Sign out</MenuItem>
                   </Menu>
-                </>
-              ) : (
-                <>
-                  <Button color="inherit" component={Link} to="/">
+                </>              ) : (
+                <>                  <Button color="inherit" component={Link} to="/" data-testid="nav-home">
                     Home
                   </Button>
-                  <Button color="inherit" component={Link} to="/queue">
+                  <Button color="inherit" component={Link} to="/queue" data-testid="nav-queue">
                     View Queues
                   </Button>
-                  <Button color="inherit" component={Link} to="/festiclub">
+                  <Button color="inherit" component={Link} to="/festiclub" data-testid="nav-festiclub">
                     FestiClub
                   </Button>
-                  <Button color="inherit" component={Link} to="/setlist">
+                  <Button color="inherit" component={Link} to="/setlist" data-testid="nav-setlist">
                     Setlist
                   </Button>
-                  <IconButton color="inherit" onClick={handleMenu}>
+                  <IconButton color="inherit" onClick={handleMenu} data-testid="user-avatar">
                     <Avatar alt={currentUser?.display_name} src={currentUser?.images[0]?.url} />
-                  </IconButton>
-                  <Menu
+                  </IconButton>                  <Menu
                     anchorEl={anchorEl}
                     open={open}
                     onClose={handleClose}
@@ -162,11 +153,11 @@ const App: React.FC = () => {
                     <MenuItem disabled>
                       <ListItemText primary={currentUser?.display_name} />
                     </MenuItem>
-                    <MenuItem onClick={openSettings}>
+                    <MenuItem onClick={openSettings} data-testid="settings-menu-item">
                       <SettingsIcon /> Settings
                     </MenuItem>
                     <Divider sx={{ my: 0.5 }} />
-                    <MenuItem onClick={() => logOut()}>Sign out</MenuItem>
+                    <MenuItem onClick={() => logOut()} data-testid="logout-menu-item">Sign out</MenuItem>
                   </Menu>
                 </>
               )}
@@ -177,9 +168,8 @@ const App: React.FC = () => {
             </Button>
           )}
         </Toolbar>
-      </AppBar>
-      <ErrorBoundary FallbackComponent={ErrorDisplay}>
-        <Container>
+      </AppBar>      <ErrorBoundary FallbackComponent={ErrorDisplay}>
+        <Container data-testid="app-container">
           <Routes>
             <Route path="/queue" element={<QueuePage />} />
             <Route path="/callback" element={<QueuePage />} />

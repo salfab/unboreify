@@ -11,8 +11,12 @@
     "preview": "vite preview",
     "cypress:open": "cypress open",
     "cypress:run": "cypress run",
-    "test:e2e": "cypress run",
-    "test:e2e:headed": "cypress run --headed"
+    "test:e2e": "cypress run --spec 'cypress/e2e/**/*.cy.{js,jsx,ts,tsx}'",
+    "test:e2e:headed": "cypress run --headed --spec 'cypress/e2e/**/*.cy.{js,jsx,ts,tsx}'",
+    "test:gherkin": "cypress run --spec 'cypress/e2e/**/*.feature'",
+    "test:gherkin:headed": "cypress run --headed --spec 'cypress/e2e/**/*.feature'",
+    "test:gherkin:open": "cypress open --spec 'cypress/e2e/**/*.feature'",
+    "test:all": "cypress run"
   },
   "dependencies": {
     "@emotion/react": "^11.13.3",
@@ -29,7 +33,10 @@
     "react-router-dom": "^6.26.2"
   },
   "devDependencies": {
+    "@badeball/cypress-cucumber-preprocessor": "^22.1.0",
+    "@bahmutov/cypress-esbuild-preprocessor": "^2.2.5",
     "@cypress/react": "^9.0.1",
+    "@cypress/webpack-preprocessor": "^6.0.4",
     "@netlify/functions": "^2.8.1",
     "@types/lodash": "^4.17.7",
     "@types/react": "^18.3.5",
@@ -43,8 +50,19 @@
     "eslint-plugin-react-hooks": "^4.6.2",
     "eslint-plugin-react-refresh": "^0.4.11",
     "globals": "^15.9.0",
+    "ts-loader": "^9.5.2",
     "typescript": "^5.6.2",
     "typescript-eslint": "^7.18.0",
-    "vite": "^5.4.5"
+    "vite": "^5.4.5",
+    "webpack": "^5.99.9"
+  },
+  "cypress-cucumber-preprocessor": {
+    "stepDefinitions": [
+      "cypress/e2e/**/*.steps.{js,ts}",
+      "cypress/support/step_definitions/**/*.{js,ts}"
+    ],
+    "typescript": {
+      "enabled": true
+    }
   }
 }
