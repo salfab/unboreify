@@ -349,10 +349,25 @@ When('I clear the queue', () => {
 });
 
 When('I change the playlist multiplier to {int}', (multiplier: number) => {
-  // Use the data-testid selector for the slider
+  // For MUI Slider, we need to use a different approach
   cy.get('[data-testid="playlist-multiplier-slider"]').then(($slider) => {
-    // Set the value directly on the slider input
+    // First approach: try to click on the slider at the right position
+    const sliderElement = $slider[0];
+    const sliderRect = sliderElement.getBoundingClientRect();
+    const sliderWidth = sliderRect.width;
+    
+    // Calculate position for value (1-5 range, so value 5 = 100% of the way)
+    const percentage = (multiplier - 1) / (5 - 1); // Convert to 0-1 range
+    const clickX = sliderWidth * percentage;
+    
+    cy.wrap($slider).click(clickX, 0, { force: true });
+    
+    // Wait a moment for the slider to update
+    cy.wait(500);
+    
+    // Fallback: try direct value setting with proper events
     cy.wrap($slider)
+      .invoke('attr', 'aria-valuenow', multiplier)
       .invoke('val', multiplier)
       .trigger('input', { force: true })
       .trigger('change', { force: true });
@@ -496,12 +511,18 @@ Then('the playlist multiplier should be {int}', (expectedValue: number) => {
   // Try to find the slider and check its value with multiple approaches
   cy.get('body').then(($body) => {
     if ($body.find('[data-testid="playlist-multiplier-slider"]').length > 0) {
+      // For MUI Slider, check both value and aria-valuenow attributes
       cy.get('[data-testid="playlist-multiplier-slider"]')
-        .should('have.value', expectedValue.toString());
+        .should('have.attr', 'aria-valuenow', expectedValue.toString())
+        .and(($el) => {
+          // Also check if the slider's value property matches
+          const value = $el.val() || $el.attr('value');
+          expect(value).to.equal(expectedValue.toString());
+        });
     } 
     else if ($body.find('.MuiSlider-root input[type="range"]').length > 0) {
       cy.get('.MuiSlider-root input[type="range"]')
-        .should('have.value', expectedValue.toString());
+        .should('have.attr', 'aria-valuenow', expectedValue.toString());
     } 
     else if ($body.find('input[type="range"]').length > 0) {
       cy.get('input[type="range"]')

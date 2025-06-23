@@ -104,9 +104,7 @@ Then('the artist search should trigger an API call', () => {
   cy.wait('@searchArtist');
 });
 
-Then('I should see artist search suggestions', () => {
-  cy.get('body').should('be.visible');
-});
+// Note: "I should see artist search suggestions" step is defined in app_features.steps.ts
 
 // Queue interface steps
 Then('I should see the Queue interface', () => {
