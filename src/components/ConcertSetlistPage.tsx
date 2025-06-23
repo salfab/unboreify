@@ -203,8 +203,7 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
       </Typography>
       <Typography variant="subtitle1" gutterBottom>
         Build a playlist from a Concert Setlist
-      </Typography>      {/* Artist Autocomplete */}
-      <Autocomplete
+      </Typography>      {/* Artist Autocomplete */}      <Autocomplete
         freeSolo
         options={artists}
         getOptionLabel={(option) => {
@@ -217,10 +216,15 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
         onInputChange={handleArtistInputChange}
         onChange={(e, v) => handleArtistSelect(e, v as Artist | null)} 
         renderInput={(params) => <TextField {...params} label="Search Artist" fullWidth inputProps={{ ...params.inputProps, 'data-testid': 'artist-search-input' }} />}
+        renderOption={(props, option) => (
+          <li {...props} data-testid="artist-option">
+            {typeof option === 'string' ? option : (option.disambiguation ? `${option.name} (${option.disambiguation})` : option.name)}
+          </li>
+        )}
         isOptionEqualToValue={(option, value) => option.mbid === value.mbid}
         sx={{ marginBottom: 2 }}
         data-testid="artist-suggestions"
-      />      {/* Setlist Select Box */}
+      />{/* Setlist Select Box */}
       {setlists.length > 0 && (
         <FormControl fullWidth sx={{ marginBottom: 2 }}>
           <InputLabel>Select Setlist</InputLabel>
@@ -281,12 +285,12 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
       </Box>
 
       {/* Queue All Tracks Button */}
-      {isTracksReady && (
-        <Box display="flex" gap={2} alignItems="center" sx={{ marginTop: 2 }}>
+      {isTracksReady && (        <Box display="flex" gap={2} alignItems="center" sx={{ marginTop: 2 }}>
           <Button
             variant="contained"
             color="primary"
             onClick={handleQueueAllTracks}
+            data-testid="queue-all-tracks-button"
           >
             Queue All Tracks on Spotify
           </Button>

@@ -125,7 +125,6 @@ Feature: Application Core Features
     When I generate a playlist
     Then the removed track should not be included in the playlist generation request
 
-  @skip
   Scenario: Alternative playlist track removal and regeneration
     Given I am logged in to Spotify
     And I have a generated alternative playlist

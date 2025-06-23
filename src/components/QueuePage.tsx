@@ -271,22 +271,20 @@ const QueuePage: React.FC = () => {
 
   return (
     <Grid container spacing={3} sx={{ pt: 2 }}>
-      {!isComplete && (
-        <Grid item xs={12}>
-          <Typography variant="h4" gutterBottom>
+      {!isComplete && (        <Grid item xs={12}>
+          <Typography variant="h4" gutterBottom data-testid="progress-section">
             Progress
           </Typography>          <Box>
-            <Typography variant="body1">{progress.phase}</Typography>
+            <Typography variant="body1" data-testid="progress-phase">{progress.phase}</Typography>
             <LinearProgress variant="determinate" value={progress.percentage} data-testid="loading-spinner" />
           </Box>
         </Grid>
       )}
-      {isComplete && showProcessMessageBar && (
-        <Grid item xs={12} sx={{ textAlign: 'center' }}>
-          <Typography variant="h4" gutterBottom >
+      {isComplete && showProcessMessageBar && (        <Grid item xs={12} sx={{ textAlign: 'center' }}>
+          <Typography variant="h4" gutterBottom data-testid="unboreified-message">
             You have been unboreified!
           </Typography>
-          <Typography variant="body1">Your alternative playlist is ready with {alternativePlaylist.length} tracks.</Typography>
+          <Typography variant="body1" data-testid="playlist-ready-message">Your alternative playlist is ready with {alternativePlaylist.length} tracks.</Typography>
           <Box display="flex" alignItems="center" justifyContent="center" mt={2}>
             <Tooltip title="Play on Spotify">
               <Box>
@@ -356,18 +354,19 @@ const QueuePage: React.FC = () => {
         </Grid>
       )}
       {showQueue ? (
-        <>
-          <Grid item xs={12}>
-            <Typography variant="h4" gutterBottom>
+        <>          <Grid item xs={12}>
+            <Typography variant="h4" gutterBottom data-testid="currently-playing-section">
               Currently Playing
             </Typography>
             {queueData?.currently_playing ? (
-              <TrackCard track={queueData.currently_playing} />
+              <div data-testid="currently-playing-track">
+                <TrackCard track={queueData.currently_playing} />
+              </div>
             ) : (
               <>Play music to get started</>
             )}
           </Grid>
-          <Grid item xs={12} sm={6}>            <Typography variant="h4" gutterBottom>
+          <Grid item xs={12} sm={6}>            <Typography variant="h4" gutterBottom data-testid="queue-section">
               Queue
               {/* TODO create a variable for this to make it more clear */}
               {((isComplete && !showProcessMessageBar) || !isComplete) &&
@@ -415,13 +414,15 @@ const QueuePage: React.FC = () => {
               )}
             </Typography>
             {isMobile && <Divider />}            <Collapse in={queueOpen || !isMobile} timeout="auto" unmountOnExit>
-              {queueData?.queue.map((track, i) => (
-                <TrackCard 
-                  track={track} 
-                  key={`${track.uri}-${i}`} 
-                  onRemove={removeFromQueue}
-                />
-              ))}
+              <div data-testid="queue-tracks">
+                {queueData?.queue.map((track, i) => (
+                  <TrackCard 
+                    track={track} 
+                    key={`${track.uri}-${i}`} 
+                    onRemove={removeFromQueue}
+                  />
+                ))}
+              </div>
             </Collapse>
           </Grid>
 
@@ -439,14 +440,14 @@ const QueuePage: React.FC = () => {
           )}
         </Grid>
       )}
-      <Grid item xs={12} sm={6}>
-        <Typography
+      <Grid item xs={12} sm={6}>        <Typography
           variant="h4"
           gutterBottom
           display="flex"
           alignItems="center"
+          data-testid="alternative-playlist-section"
         >
-          Alternative Playlist          <Tooltip title="You like your alternative playlist, but you wanted more ? Double the fun by doubling its size !">
+          Alternative Playlist<Tooltip title="You like your alternative playlist, but you wanted more ? Double the fun by doubling its size !">
             <IconButton onClick={handleEnhanceClick} size="small" sx={{ marginLeft: 1 }} data-testid="playlist-mode-selector">
               <AutoAwesomeIcon sx={{ color: mode === 'extend' ? 'primary.main' : 'text.primary' }} />
             </IconButton>
@@ -458,15 +459,16 @@ const QueuePage: React.FC = () => {
               defaultPlaylistName={`unborified [${selectedPlaylist?.name || queueData?.currently_playing?.album?.name || 'current queue'}]`}
               onSavePlaylist={handleSaveToSpotify}
             />
-          )}
-        </Typography>
-        {alternativePlaylist.map((track) => (
-          <TrackCard 
-            track={track} 
-            key={track.uri} 
-            onRemove={removeFromAlternativePlaylist}
-          />
-        ))}
+          )}        </Typography>
+        <div data-testid="alternative-playlist-tracks">
+          {alternativePlaylist.map((track) => (
+            <TrackCard 
+              track={track} 
+              key={track.uri} 
+              onRemove={removeFromAlternativePlaylist}
+            />
+          ))}
+        </div>
       </Grid>
       <Grid item xs={12}>
         <Typography variant="h4" gutterBottom>
