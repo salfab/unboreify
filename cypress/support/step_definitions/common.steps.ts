@@ -231,16 +231,19 @@ Then('I should not be authenticated', () => {
   cy.get('body').should('be.visible');
   
   // Check for any indication of authentication problems or error states
-  cy.get('body').should('satisfy', ($body) => {
-    const text = $body.text();
+  cy.get('body').should('satisfy', ($body) => {    const text = $body.text();
     const hasUserAvatar = $body.find('[data-testid="user-avatar"]').length > 0;
+    const hasHomepageButton = $body.find('[data-testid="homepage-main-button"]').length > 0;
+    const hasHomepageTitle = $body.find('[data-testid="homepage-title"]').length > 0;
     
-    // Either we should see error messages, login prompts, or no user avatar
+    // Either we should see error messages, login prompts, homepage elements, or no user avatar
     return text.includes('Error') || 
            text.includes('Failed') || 
            text.includes('Login with Spotify') || 
            text.includes('Unboreify me') || 
            text.includes('Make your Spotify playlists less boring') ||
+           hasHomepageButton ||
+           hasHomepageTitle ||
            !hasUserAvatar;
   });
 });

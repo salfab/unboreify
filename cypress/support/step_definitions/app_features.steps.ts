@@ -4,6 +4,63 @@ import { Given, When, Then } from '@badeball/cypress-cucumber-preprocessor';
 // Import custom commands
 import '../commands';
 
+// Value text map for playlist multiplier slider
+const valueTextMap: { [key: number]: string } = {
+  1: "just right",
+  2: "pushing it a bit", 
+  3: "going beyond",
+  4: "almost too much",
+  5: "turn it up to eleven",
+};
+
+// Helper functions for managing removed tracks using Cypress aliases
+const initializeRemovedTracks = () => {
+  cy.wrap([]).as('removedTracks');
+  cy.wrap(null).as('lastSearchRequest');
+  cy.wrap(null).as('lastPlaylistRequest');
+};
+
+const addRemovedTrack = (trackName: string) => {
+  cy.get('@removedTracks').then((tracks: any) => {
+    const trackArray = Array.isArray(tracks) ? tracks : [];
+    const updatedTracks = [...trackArray, {
+      name: trackName,
+      id: `removed-${Date.now()}-${Math.random()}`
+    }];
+    cy.wrap(updatedTracks).as('removedTracks');
+  });
+};
+
+const getRemovedTracks = () => {
+  // Use should to avoid throwing error if alias doesn't exist
+  return cy.get('body').then(() => {
+    return cy.get('@removedTracks').then((tracks) => {
+      return Array.isArray(tracks) ? tracks : [];
+    });
+  });
+};
+
+const clearRemovedTracks = () => {
+  cy.wrap([]).as('removedTracks');
+};
+
+// Helper functions for managing API request tracking
+const setLastSearchRequest = (requestBody: any) => {
+  cy.wrap(requestBody).as('lastSearchRequest');
+};
+
+const setLastPlaylistRequest = (requestBody: any) => {
+  cy.wrap(requestBody).as('lastPlaylistRequest');
+};
+
+const getLastSearchRequest = () => {
+  return cy.get('@lastSearchRequest').then((req: any) => req || null);
+};
+
+const getLastPlaylistRequest = () => {
+  return cy.get('@lastPlaylistRequest').then((req: any) => req || null);
+};
+
 // FestiClub specific steps
 When('I enter artist names {string}', (artistNames: string) => {
   const artists = artistNames.split(',').map(name => name.trim());
@@ -358,12 +415,10 @@ When('I change the playlist multiplier to {int}', (multiplier: number) => {
     
     // Calculate position for value (1-5 range, so value 5 = 100% of the way)
     const percentage = (multiplier - 1) / (5 - 1); // Convert to 0-1 range
-    const clickX = sliderWidth * percentage;
+    const clickX = sliderWidth * percentage;      cy.wrap($slider).click(clickX, 0, { force: true });
     
-    cy.wrap($slider).click(clickX, 0, { force: true });
-    
-    // Wait a moment for the slider to update
-    cy.wait(500);
+    // Verify the display text shows the expected value (this is more reliable than checking internal slider attributes)
+    cy.contains(valueTextMap[multiplier]).should('be.visible');
     
     // Fallback: try direct value setting with proper events
     cy.wrap($slider)
@@ -442,14 +497,14 @@ Then('I should see queue operations', () => {
   
   // Wait for component state to settle after page load
   cy.get("body", { timeout: 10000 }).should("be.visible");
-  
-  // Check current page state and handle different scenarios
+    // Check current page state and handle different scenarios
   cy.get('body').then(($body) => {
-    const pageText = $body.text();
-    cy.log('Current page text includes:', pageText.substring(0, 200));
+    // Check for completion state using proper data-testid
+    const unboreifiedMessageExists = $body.find('[data-testid="unboreified-message"]').length > 0;
+    const progressSectionExists = $body.find('[data-testid="progress-section"]').length > 0;
     
     // If we're in the "unboreified" completion state, reset by reloading again
-    if (pageText.includes('You have been unboreified') || pageText.includes('unboreified')) {
+    if (unboreifiedMessageExists) {
       cy.log('Page is in completion state, performing hard reset');
       cy.clearAllLocalStorage();
       cy.clearAllSessionStorage();
@@ -462,7 +517,7 @@ Then('I should see queue operations', () => {
     }
     
     // Check if we're in a progress state
-    if (pageText.includes('Progress') && pageText.includes('Validating')) {
+    if (progressSectionExists) {
       cy.log('Page is in progress state, waiting for completion');
       cy.get("body", { timeout: 20000 }).should("be.visible");
       // After progress, perform hard reset
@@ -712,12 +767,11 @@ Then('I should see an error message', () => {
         cy.log('Found error text in page content');
         // Just verify that we found error-related text
         expect(hasErrorText).to.be.true;
-      } else {
-        // If no error text found, at least verify that the page loaded and network errors were simulated
+      } else {        // If no error text found, at least verify that the page loaded and network errors were simulated
         cy.log('No error text found, checking if network errors were intercepted');
         // This test might be too strict - network errors might not always show visible error messages
         // Let's just verify the page is still functional after network issues
-        cy.get('body').should('contain.text', 'Unboreify');
+        cy.get('[data-testid="navigation"]').should('be.visible');
       }
     }
   });
@@ -1086,20 +1140,14 @@ Given('I have a current queue with tracks', () => {
 });
 
 Then('I should see progress updates for playlist generation', () => {
-  // Check for progress text - be flexible as the order and timing may vary
-  cy.get('body').should(($body) => {
-    const text = $body.text();
-    // Look for any of the progress messages that should appear during playlist generation
-    const hasProgressMessages = 
-      text.includes('Fetching recently played tracks') ||
-      text.includes('Validating track') ||
-      text.includes('Getting suggestions') ||
-      text.includes('Progress');
-    expect(hasProgressMessages).to.be.true;
-  });
-  
-  // Wait for some progress to be visible
+  // Wait for the progress section to be visible
   cy.get('[data-testid="progress-section"]', { timeout: 15000 }).should('be.visible');
+  
+  // Check that progress phase text is visible
+  cy.get('[data-testid="progress-phase"]', { timeout: 10000 }).should('be.visible');
+  
+  // Check that the loading spinner is visible
+  cy.get('[data-testid="loading-spinner"]', { timeout: 10000 }).should('be.visible');
 });
 
 When('the playlist generation completes', () => {
@@ -1121,82 +1169,56 @@ Then('I should see an alternative playlist with recommended tracks', () => {
   // Check that we have alternative tracks displayed
   cy.get('[data-testid="track-card"]').should('have.length.greaterThan', 0);
   
-  // Log what tracks are actually displayed for debugging
-  cy.get('body').then($body => {
-    const bodyText = $body.text();
-    cy.log('Page content includes:', bodyText.substring(0, 500));
-  });
-  
-  // Be more flexible - just check that we have tracks that are different from the queue
-  cy.get('body').should(($body) => {
-    const text = $body.text();
+  // Verify that track cards are specifically in the alternative playlist section
+  cy.get('[data-testid="alternative-playlist-tracks"]')
+    .find('[data-testid="track-card"]')
+    .should('have.length.greaterThan', 0);
     
-    // Check that we have some tracks displayed
-    const hasTrackCards = $body.find('[data-testid="track-card"]').length > 0;
-    expect(hasTrackCards).to.be.true;
-    
-    // Check that Alternative Playlist section is present
-    expect(text).to.include('Alternative Playlist');
-    
-    // If we can't find the exact mocked tracks, at least verify we have some alternative content
-    const hasAlternativeContent = 
-      text.includes('The Eraser') || 
-      text.includes('Sour Times') || 
-      text.includes('unboreified') ||
-      $body.find('[data-testid="track-card"]').length >= 2;
-    expect(hasAlternativeContent).to.be.true;
-  });
+  cy.log('✓ Alternative playlist with tracks is visible');
 });
 
 Then('I should see an alternative playlist based on remaining tracks', () => {
   // Check that the Alternative Playlist section is visible
   cy.get('[data-testid="alternative-playlist-section"]', { timeout: 10000 }).should('be.visible');
   
-  // Check if we have track cards or just verify content
-  cy.get('body').then($body => {
-    const trackCards = $body.find('[data-testid="track-card"]');
-    const bodyText = $body.text();
+  // Check if we have track cards in the alternative playlist section
+  cy.get('[data-testid="alternative-playlist-tracks"]').then($alternativeSection => {
+    const trackCards = $alternativeSection.find('[data-testid="track-card"]');
     
     if (trackCards.length > 0) {
       // If we have track cards, verify we have some in the Alternative Playlist section
-      cy.get('[data-testid="track-card"]').should('have.length.greaterThan', 0);
+      cy.get('[data-testid="alternative-playlist-tracks"]')
+        .find('[data-testid="track-card"]')
+        .should('have.length.greaterThan', 0);
       cy.log(`✓ Found ${trackCards.length} track cards in alternative playlist`);
     } else {
-      // If no track cards, at least verify we have the Alternative Playlist section
-      expect(bodyText).to.include('Alternative Playlist');
+      // If no track cards, at least verify we have the Alternative Playlist section visible
+      cy.get('[data-testid="alternative-playlist-section"]').should('be.visible');
       cy.log('✓ Alternative Playlist section is visible (no track cards rendered)');
     }
     
-    // For now, don't strictly enforce that the removed track is absent
-    // since the track removal isn't working properly due to TrackCard rendering issues
     cy.log('✓ Alternative playlist verification completed');
   });
 });
 
 Then('I should see an extended playlist based on remaining tracks', () => {
   // Check that we have some indication of an extended/enhanced playlist
-  cy.get('body').then($body => {
-    const bodyText = $body.text();
-    const trackCards = $body.find('[data-testid="track-card"]');
-    
-    // Look for indicators that we're in extend/enhance mode
-    const hasEnhanceIndicators = 
-      bodyText.includes('enhance') || 
-      bodyText.includes('extend') || 
-      bodyText.includes('Alternative Playlist') ||
-      bodyText.includes('unboreified');
-    
-    expect(hasEnhanceIndicators).to.be.true;
+  cy.get('[data-testid="alternative-playlist-section"]', { timeout: 10000 }).should('be.visible');
+  
+  // Check for track cards in the alternative playlist section
+  cy.get('[data-testid="alternative-playlist-tracks"]').then($alternativeSection => {
+    const trackCards = $alternativeSection.find('[data-testid="track-card"]');
     
     if (trackCards.length > 0) {
-      cy.get('[data-testid="track-card"]').should('have.length.greaterThan', 0);
+      cy.get('[data-testid="alternative-playlist-tracks"]')
+        .find('[data-testid="track-card"]')
+        .should('have.length.greaterThan', 0);
       cy.log(`✓ Found ${trackCards.length} track cards in extended playlist`);
     } else {
+      cy.get('[data-testid="alternative-playlist-section"]').should('be.visible');
       cy.log('✓ Extended playlist section is visible (no track cards rendered)');
     }
     
-    // For now, don't strictly enforce that the removed track is absent
-    // since the track removal isn't working properly due to TrackCard rendering issues
     cy.log('✓ Extended playlist verification completed');
   });
 });
@@ -1205,15 +1227,10 @@ Then('I should see an extended playlist based on remaining tracks', () => {
 let removedTrackId: string | null = null;
 
 When('I remove a track from the queue', () => {
-  // Remove a track from the queue section (not currently playing)
-  cy.get('[data-testid="queue-section"]').should('be.visible');
+  // Remove a track from the queue section (not currently playing)  cy.get('[data-testid="queue-section"]').should('be.visible');
   
   // Initialize removed tracks state
-  cy.window().then((win) => {
-    if (!(win as any).__REMOVED_TRACKS__) {
-      (win as any).__REMOVED_TRACKS__ = [];
-    }
-  });
+  initializeRemovedTracks();
   
   // Look specifically for tracks in the queue section that have remove buttons
   cy.get('[data-testid="queue-tracks"]').then(($queueTracks) => {
@@ -1229,31 +1246,27 @@ When('I remove a track from the queue', () => {
       const trackName = $firstTrack.find('[data-testid="track-name"]').text() || 'Unknown Track';
       
       // Store removed track info
-      cy.window().then((win) => {
-        (win as any).__REMOVED_TRACKS__.push({
-          name: trackName,
-          id: `removed-${Date.now()}-${Math.random()}`
-        });
+      addRemovedTrack(trackName);      // Click the remove button
+      cy.wrap($firstTrack).find('[data-testid="remove-track-button"]').click();
+      
+      // Wait for the track to be actually removed from the UI by checking that the specific track card is gone
+      cy.get('[data-testid="queue-tracks"]').should(($queueTracks) => {
+        const remainingTrackNames = $queueTracks.find('[data-testid="track-name"]')
+          .toArray()
+          .map(el => Cypress.$(el).text());
+        expect(remainingTrackNames).to.not.include(trackName);
       });
       
-      // Click the remove button
-      cy.wrap($firstTrack).find('[data-testid="remove-track-button"]').click();
-      cy.log(`✓ Removed track "${trackName}" from queue`);
+      cy.log(`✓ Removed track "${trackName}" from queue and verified it's gone from UI`);
     } else {
       // Fallback: use clear queue button if no individual remove buttons
       cy.log('No individual remove buttons found, using clear queue as fallback');
       
       cy.get('body').then(($body) => {
-        if ($body.find('[data-testid="clear-queue-button"]').length > 0) {
-          // Store all queue tracks as removed before clearing
+        if ($body.find('[data-testid="clear-queue-button"]').length > 0) {          // Store all queue tracks as removed before clearing
           $queueTracks.find('[data-testid="track-card"]').each((index, element) => {
             const trackName = Cypress.$(element).find('[data-testid="track-name"]').text() || 'Unknown Track';
-            cy.window().then((win) => {
-              (win as any).__REMOVED_TRACKS__.push({
-                name: trackName,
-                id: `removed-${Date.now()}-${Math.random()}`
-              });
-            });
+            addRemovedTrack(trackName);
           });
           
           cy.get('[data-testid="clear-queue-button"]').click();
@@ -1279,13 +1292,19 @@ When('I remove a track from the alternative playlist', () => {
     if (tracksWithRemoveButtons.length > 0) {
       // Get the first track with a remove button
       const $firstTrack = tracksWithRemoveButtons.first();
-      
-      // Get track name using the new data-testid
+        // Get track name using the new data-testid
       const trackName = $firstTrack.find('[data-testid="track-name"]').text() || 'Unknown Track';
       
       // Click the remove button
-      cy.wrap($firstTrack).find('[data-testid="remove-track-button"]').click();
-      cy.log(`✓ Removed track "${trackName}" from alternative playlist`);
+      cy.wrap($firstTrack).find('[data-testid="remove-track-button"]').click();      
+      // Wait for the track to be actually removed from the UI by checking the alternative playlist specifically
+      cy.get('[data-testid="alternative-playlist-tracks"]').should(($playlistTracks) => {
+        const remainingTrackNames = $playlistTracks.find('[data-testid="track-name"]')
+          .toArray()
+          .map(el => Cypress.$(el).text());
+        expect(remainingTrackNames).to.not.include(trackName);
+      });
+      cy.log(`✓ Removed track "${trackName}" from alternative playlist and verified it's gone from UI`);
     } else {
       cy.log('⚠ No tracks with remove buttons found in alternative playlist');
     }
@@ -1302,25 +1321,21 @@ Given('I have a generated alternative playlist', () => {
   
   // Generate playlist to create the alternative playlist
   cy.get('[data-testid="generate-playlist-button"]', { timeout: 10000 }).should('be.visible').click();
-  
-  // Wait for generation to complete - look for any signs of generated content
-  cy.get("body", { timeout: 15000 }).should(($body) => {
-    const text = $body.text();
-    // Look for any indication that playlist generation occurred
-    const hasGenerated = text.includes('Alternative') || text.includes('playlist') || 
-                        text.includes('unboreified') || text.includes('recommended') ||
-                        $body.find('[data-testid="track-card"]').length > 0;
-    expect(hasGenerated).to.be.true;
-  }).then(() => {
-    cy.log('✓ Alternative playlist appears to be generated');
-  });
-  
-  cy.log('✓ Alternative playlist setup complete');
+    // Wait for generation to complete - check for alternative playlist section or track cards
+  cy.get('[data-testid="alternative-playlist-section"], [data-testid="track-card"]', { timeout: 15000 })
+    .should('be.visible')
+    .then(() => {
+      cy.log('✓ Alternative playlist appears to be generated');
+    });
+    cy.log('✓ Alternative playlist setup complete');
 });
 
 When('I remove a track from the alternative playlist', () => {
   // Wait for the alternative playlist section to be visible
   cy.get('[data-testid="alternative-playlist-section"]', { timeout: 10000 }).should('be.visible');
+  
+  // Initialize removed tracks state
+  initializeRemovedTracks();
   
   // Look specifically for tracks in the alternative playlist section that have remove buttons
   cy.get('[data-testid="alternative-playlist-tracks"]').then(($playlistTracks) => {
@@ -1331,13 +1346,23 @@ When('I remove a track from the alternative playlist', () => {
     if (tracksWithRemoveButtons.length > 0) {
       // Get the first track with a remove button
       const $firstTrack = tracksWithRemoveButtons.first();
-      
-      // Get track name using the new data-testid
-      const trackName = $firstTrack.find('[data-testid="track-name"]').text() || 'Unknown Track';
+        // Get track name using the new data-testid
+      const trackName = $firstTrack.find('[data-testid="track-name"]').text() || 
+                       $firstTrack.find('h6').text() || 'Unknown Track';      // Store removed track info before clicking remove
+      addRemovedTrack(trackName);
       
       // Click the remove button
       cy.wrap($firstTrack).find('[data-testid="remove-track-button"]').click();
-      cy.log(`✓ Removed track "${trackName}" from alternative playlist`);
+      
+      // Wait for the track to be actually removed from the UI by checking the alternative playlist section
+      cy.get('[data-testid="alternative-playlist-tracks"]').should(($alternativeSection) => {
+        const remainingTrackNames = $alternativeSection.find('[data-testid="track-name"]')
+          .toArray()
+          .map(el => Cypress.$(el).text());
+        expect(remainingTrackNames).to.not.include(trackName);
+      });
+      
+      cy.log(`✓ Removed track "${trackName}" from alternative playlist and verified it's gone from UI`);
     } else {
       cy.log('⚠ No tracks with remove buttons found in alternative playlist');
     }
@@ -1347,9 +1372,11 @@ When('I remove a track from the alternative playlist', () => {
 When('I remove multiple tracks from the queue', () => {
   // Wait for track cards to be visible  
   cy.get('[data-testid="track-card"]', { timeout: 10000 }).should('have.length.greaterThan', 0);
-  
-  // Wait a bit more for components to fully render
+    // Wait a bit more for components to fully render
   cy.get("body", { timeout: 5000 }).should("be.visible");
+  
+  // Initialize removed tracks state
+  initializeRemovedTracks();
   
   // Check if remove buttons are available with body approach to avoid throwing error
   cy.get('body').then($body => {
@@ -1357,13 +1384,37 @@ When('I remove multiple tracks from the queue', () => {
     if (removeButtons.length > 1) {
       // Multiple remove buttons available, use them
       cy.log(`Found ${removeButtons.length} remove buttons, removing first two tracks`);
+      
+      // Get first track info before removal
+      const firstTrack = $body.find('[data-testid="track-card"]').first();
+      const firstTrackName = firstTrack.find('[data-testid="track-name"]').text() || 
+                            firstTrack.find('h6').text() || 'Unknown Track';
+      
+      addRemovedTrack(firstTrackName);
+      
       cy.get('[data-testid="remove-track-button"]').first().click();
       
       cy.get("body", { timeout: 3000 }).should("be.visible");
-      cy.get('[data-testid="remove-track-button"]').first().click();
+        // Get second track info before removal (find again since DOM changed)
+      cy.get('body').then($updatedBody => {
+        const secondTrack = $updatedBody.find('[data-testid="track-card"]').first();
+        const secondTrackName = secondTrack.find('[data-testid="track-name"]').text() || 
+                               secondTrack.find('h6').text() || 'Unknown Track';
+        
+        addRemovedTrack(secondTrackName);
+        
+        cy.get('[data-testid="remove-track-button"]').first().click();
+      });
     } else {
       // Fallback to clear queue button (simulates multiple removal)
       cy.log('Individual remove buttons not available, using clear queue as fallback');
+        // Store all tracks before clearing
+      $body.find('[data-testid="track-card"]').each((index, element) => {
+        const trackName = Cypress.$(element).find('[data-testid="track-name"]').text() || 
+                         Cypress.$(element).find('h6').text() || 'Unknown Track';
+        addRemovedTrack(trackName);
+      });
+      
       cy.get('[data-testid="clear-queue-button"]', { timeout: 10000 }).should('be.visible').click();
     }
   });
@@ -1374,6 +1425,9 @@ When('I remove multiple tracks from the alternative playlist', () => {
   // Based on your clarification: tracks are removed using buttons on track cards
   
   cy.get("body", { timeout: 10000 }).should("be.visible");
+  
+  // Initialize removed tracks state
+  initializeRemovedTracks();
   
   // Find track cards that have remove buttons (only alternative playlist and queue tracks have them)
   cy.get('body').then(($body) => {
@@ -1387,12 +1441,27 @@ When('I remove multiple tracks from the alternative playlist', () => {
       const secondTrack = tracksWithRemoveButtons.eq(1);
       
       // Remove first track
+      const initialTracksWithButtons = tracksWithRemoveButtons.length;
+      
+      // Get track name and store it before removal
+      const firstTrackName = firstTrack.find('[data-testid="track-name"]').text() || 
+                            firstTrack.find('h6').text() || 'Unknown Track';
+      
+      addRemovedTrack(firstTrackName);
+      
       cy.wrap(firstTrack).within(() => {
         cy.get('[data-testid="remove-track-button"]').should('be.visible').click();
       });
       
-      // Wait briefly for UI to update
-      cy.wait(500);
+      // Wait for the UI to update - track should be removed or button should disappear
+      cy.get('body').should(() => {
+        const trackCards = Cypress.$('[data-testid="track-card"]');
+        const tracksWithButtons = trackCards.filter((index, element) => {
+          return Cypress.$(element).find('[data-testid="remove-track-button"]').length > 0;
+        });
+        // Either the track is removed or the remove button is gone
+        expect(tracksWithButtons.length).to.be.lessThan(initialTracksWithButtons);
+      });
       
       // Remove second track (find it again since the DOM might have changed)
       cy.get('body').then(($updatedBody) => {
@@ -1401,15 +1470,25 @@ When('I remove multiple tracks from the alternative playlist', () => {
         });
         
         if (updatedTracksWithButtons.length > 0) {
-          cy.wrap(updatedTracksWithButtons.first()).within(() => {
+          const secondTrackToRemove = updatedTracksWithButtons.first();
+          const secondTrackName = secondTrackToRemove.find('[data-testid="track-name"]').text() || 
+                                 secondTrackToRemove.find('h6').text() || 'Unknown Track';
+            // Store second track info before removal
+          addRemovedTrack(secondTrackName);
+          
+          cy.wrap(secondTrackToRemove).within(() => {
             cy.get('[data-testid="remove-track-button"]').should('be.visible').click();
           });
         }
       });
       
-      cy.log('✓ Successfully removed multiple tracks from alternative playlist');
-    } else if (tracksWithRemoveButtons.length === 1) {
+      cy.log('✓ Successfully removed multiple tracks from alternative playlist');    } else if (tracksWithRemoveButtons.length === 1) {
       // Only one track available, remove it
+      const singleTrackName = tracksWithRemoveButtons.first().find('[data-testid="track-name"]').text() || 
+                             tracksWithRemoveButtons.first().find('h6').text() || 'Unknown Track';
+      
+      addRemovedTrack(singleTrackName);
+      
       cy.wrap(tracksWithRemoveButtons.first()).within(() => {
         cy.get('[data-testid="remove-track-button"]').should('be.visible').click();
       });
@@ -1427,8 +1506,12 @@ When('I remove multiple tracks from the alternative playlist', () => {
         const newTracksWithButtons = $newBody.find('[data-testid="track-card"]').filter((index, element) => {
           return Cypress.$(element).find('[data-testid="remove-track-button"]').length > 0;
         });
-        
-        if (newTracksWithButtons.length > 0) {
+          if (newTracksWithButtons.length > 0) {
+          const trackName = newTracksWithButtons.first().find('[data-testid="track-name"]').text() || 
+                           newTracksWithButtons.first().find('h6').text() || 'Unknown Track';
+          
+          addRemovedTrack(trackName);
+          
           cy.wrap(newTracksWithButtons.first()).within(() => {
             cy.get('[data-testid="remove-track-button"]').should('be.visible').click();
           });
@@ -1455,7 +1538,7 @@ Then('none of the removed tracks should be included in the playlist generation r
   // This verifies that subsequent playlist requests exclude removed tracks from the alternative playlist
   // Since tracks are removed from local state, they should not appear in the UI anymore
   
-  // Wait for any ongoing playlist operations to complete
+  // Wait for any pending DOM updates or state changes to complete
   cy.get("body", { timeout: 8000 }).should("be.visible");
   
   // Verify that the alternative playlist still has content but fewer tracks than before
@@ -1491,13 +1574,10 @@ Then('I should see fresh recommendations replacing the removed tracks', () => {
 Then('the removed track should not be included in the playlist generation request', () => {
   // This step verifies that removed tracks are excluded from API requests
   // We'll set up an intercept to capture the playlist generation request
-  
-  // Set up intercept for playlist generation if not already done
+    // Set up intercept for playlist generation if not already done
   cy.intercept('POST', '**/search', (req) => {
     // Store the request for validation
-    cy.window().then((win) => {
-      (win as any).__LAST_SEARCH_REQUEST__ = req.body;
-    });
+    setLastSearchRequest(req.body);
     req.reply({
       statusCode: 200,
       body: {
@@ -1519,9 +1599,7 @@ Then('the removed track should not be included in the playlist generation reques
   
   cy.intercept('POST', '**/playlist', (req) => {
     // Store the request for validation
-    cy.window().then((win) => {
-      (win as any).__LAST_PLAYLIST_REQUEST__ = req.body;
-    });
+    setLastPlaylistRequest(req.body);
     req.reply({
       statusCode: 200,
       body: {
@@ -1539,34 +1617,34 @@ Then('the removed track should not be included in the playlist generation reques
         ]
       }
     });
-  }).as('playlistCreation');
-  
-  // Wait for the requests to be made and then validate
-  cy.window().then((win) => {
-    const searchRequest = (win as any).__LAST_SEARCH_REQUEST__;
-    const playlistRequest = (win as any).__LAST_PLAYLIST_REQUEST__;
-    const removedTracks = (win as any).__REMOVED_TRACKS__ || [];
+  }).as('playlistCreation');  // Wait for the requests to be made and then validate
+  getRemovedTracks().then((removedTracks: any) => {
+    const tracks = Array.isArray(removedTracks) ? removedTracks : [];
     
-    if (removedTracks.length > 0) {
-      // Check search request if it exists
-      if (searchRequest && searchRequest.tracks) {
-        removedTracks.forEach((removedTrack: any) => {
-          const trackInRequest = searchRequest.tracks.some((track: any) => 
-            track.id === removedTrack.id || track.name === removedTrack.name
-          );
-          expect(trackInRequest).to.be.false;
-        });
-      }
+    if (tracks.length > 0) {
+      // Get and validate search request
+      getLastSearchRequest().then((searchRequest: any) => {
+        if (searchRequest && searchRequest.tracks) {
+          tracks.forEach((removedTrack: any) => {
+            const trackInRequest = searchRequest.tracks.some((track: any) => 
+              track.id === removedTrack.id || track.name === removedTrack.name
+            );
+            expect(trackInRequest).to.be.false;
+          });
+        }
+      });
       
-      // Check playlist request if it exists
-      if (playlistRequest && playlistRequest.tracks) {
-        removedTracks.forEach((removedTrack: any) => {
-          const trackInRequest = playlistRequest.tracks.some((track: any) => 
-            track.id === removedTrack.id || track.name === removedTrack.name
-          );
-          expect(trackInRequest).to.be.false;
-        });
-      }
+      // Get and validate playlist request
+      getLastPlaylistRequest().then((playlistRequest: any) => {
+        if (playlistRequest && playlistRequest.tracks) {
+          tracks.forEach((removedTrack: any) => {
+            const trackInRequest = playlistRequest.tracks.some((track: any) => 
+              track.id === removedTrack.id || track.name === removedTrack.name
+            );
+            expect(trackInRequest).to.be.false;
+          });
+        }
+      });
       
       cy.log('✓ Verified removed tracks are excluded from playlist generation requests');
     } else {
@@ -1578,21 +1656,16 @@ Then('the removed track should not be included in the playlist generation reques
 When('I enable playlist extension mode', () => {
   // Look for playlist extension toggle or button
   // This could be a checkbox, toggle switch, or button depending on the UI
-  
-  cy.get('body').then(($body) => {
+    cy.get('body').then(($body) => {
     // Try different possible selectors for playlist extension mode
     if ($body.find('[data-testid="playlist-mode-selector"]').length > 0) {
       cy.get('[data-testid="playlist-mode-selector"]').click();
       cy.log('✓ Enabled playlist extension via playlist mode selector');
-    } else if ($body.find('[data-testid="extend-playlist-toggle"]').length > 0) {
-      cy.get('[data-testid="extend-playlist-toggle"]').click();
-      cy.log('✓ Enabled playlist extension via toggle');
-    } else if ($body.find('[data-testid="extend-mode-checkbox"]').length > 0) {
-      cy.get('[data-testid="extend-mode-checkbox"]').check();
-      cy.log('✓ Enabled playlist extension via checkbox');
+    } else if ($body.find('[data-testid="extension-toggle"]').length > 0) {
+      cy.get('[data-testid="extension-toggle"]').click();
+      cy.log('✓ Enabled playlist extension via extension toggle');
     } else {
-      // Fallback: assume extension mode is enabled by default or not needed
-      cy.log('✓ Playlist extension mode assumed to be available');
+      cy.log('⚠ No playlist extension controls found - might already be enabled');
     }
   });
 });
@@ -1601,11 +1674,8 @@ When('I remove all tracks from the queue', () => {
   // Remove all tracks from the queue by clicking remove buttons on each track
   
   cy.get('body', { timeout: 10000 }).should('be.visible');
-  
-  // Initialize removed tracks state
-  cy.window().then((win) => {
-    (win as any).__REMOVED_TRACKS__ = [];
-  });
+    // Initialize removed tracks state
+  clearRemovedTracks();
   
   // First try to use the clear queue button if available
   cy.get('body').then(($body) => {
@@ -1628,25 +1698,23 @@ When('I remove all tracks from the queue', () => {
           // Get the first track with a remove button
           const $firstTrack = tracksWithRemoveButtons.first();
           const trackName = $firstTrack.find('h6').text() || 'Unknown Track';
-          
-          // Store removed track info
-          cy.window().then((win) => {
-            if (!(win as any).__REMOVED_TRACKS__) {
-              (win as any).__REMOVED_TRACKS__ = [];
-            }
-            (win as any).__REMOVED_TRACKS__.push({
-              name: trackName,
-              id: `removed-${Date.now()}-${Math.random()}`
-            });
-          });
+            // Store removed track info
+          addRemovedTrack(trackName);
           
           // Click the remove button
           cy.wrap($firstTrack).within(() => {
             cy.get('[data-testid="remove-track-button"]').click();
           });
           
-          // Wait briefly and check for more tracks to remove
-          cy.wait(300);
+          // Wait for the DOM to update after track removal
+          cy.get('body').should(() => {
+            const currentTracksWithButtons = Cypress.$('[data-testid="track-card"]').filter((index, element) => {
+              return Cypress.$(element).find('[data-testid="remove-track-button"]').length > 0;
+            });
+            // Ensure the DOM has been updated (either fewer tracks or different content)
+            expect(currentTracksWithButtons.length).to.be.at.most(tracksWithRemoveButtons.length);
+          });
+          
           checkAndRemoveTrack();
         } else {
           cy.log('✓ No more tracks with remove buttons found');
@@ -1676,61 +1744,56 @@ When('I undo the track removal', () => {
       cy.get('[data-testid="undo-track-removal"]').click();
       cy.log('✓ Clicked undo track removal button');
     } else {
-      // Fallback: simulate undo by clearing the removed tracks state
-      // This is a test-only mechanism since the actual app might not have undo functionality
-      cy.window().then((win) => {
-        if ((win as any).__REMOVED_TRACKS__) {
-          (win as any).__REMOVED_TRACKS__ = [];
-          cy.log('✓ Simulated undo by clearing removed tracks state');
-        } else {
-          cy.log('✓ No tracks to undo or undo functionality not available');
-        }
-      });
-    }
-  });
+      // Fallback: simulate undo by clearing the removed tracks state      // This is a test-only mechanism since the actual app might not have undo functionality
+      clearRemovedTracks();
+      cy.log('✓ Simulated undo by clearing removed tracks state');
+    }  });
   
-  // Wait a moment for the undo to take effect
-  cy.wait(500);
+  // Wait for any UI updates from the undo action to complete
+  cy.get('body').should('be.visible'); // Ensure DOM is ready after undo
 });
 
 Then('the removed track should not be included in the enhancement request', () => {
-  // This is similar to the playlist generation request validation but for enhanced playlists
   // Check that removed tracks are excluded from enhancement API requests
   
-  cy.window().then((win) => {
-    if ((win as any).__CYPRESS_ALIASES__ && (win as any).__CYPRESS_ALIASES__.enhancePlaylist) {
-      cy.get('@enhancePlaylist').then((interception: any) => {
-        if (interception && interception.request && interception.request.body) {
-          const requestBody = interception.request.body;
+  getRemovedTracks().then((removedTracks: any) => {
+    const tracks = Array.isArray(removedTracks) ? removedTracks : [];
+    if (tracks.length > 0) {
+      cy.log(`Checking enhancement request for ${tracks.length} removed tracks`);
+      
+      // First try to validate using stored requests
+      getLastSearchRequest().then((searchRequest: any) => {
+        if (searchRequest && searchRequest.tracks) {
+          tracks.forEach((removedTrack: any) => {
+            const trackInRequest = searchRequest.tracks.some((track: any) => 
+              track.id === removedTrack.id || track.name === removedTrack.name
+            );
+            expect(trackInRequest, `Removed track "${removedTrack.name}" should not be in search request`).to.be.false;
+          });
+          cy.log('✓ Verified removed tracks are excluded from search request');        } else {
+          // Fallback: validate that removed tracks are not visible in the enhanced playlist UI
+          cy.log('⚠ No search request available - validating UI state instead');
           
-          // Get the removed track info from state 
-          const removedTracks = (win as any).__REMOVED_TRACKS__ || [];
-          if (removedTracks.length > 0) {
-            // Check that removed tracks are not in the request
-            removedTracks.forEach((removedTrack: any) => {
-              const trackInRequest = requestBody.tracks?.some((track: any) => 
-                track.id === removedTrack.id || track.name === removedTrack.name
-              );
-              expect(trackInRequest).to.be.false;
+          // Wait for any pending UI updates to complete
+          cy.get('body', { timeout: 5000 }).should('be.visible');
+            tracks.forEach((removedTrack: any) => {            // Check specifically that removed tracks are not in the alternative playlist section
+            cy.get('[data-testid="alternative-playlist-section"]').then(($alternativeSection) => {
+              if ($alternativeSection.length > 0) {
+                const trackNames = $alternativeSection.find('[data-testid="track-name"]')
+                  .toArray()
+                  .map(el => Cypress.$(el).text());
+                expect(trackNames).to.not.include(removedTrack.name);
+                cy.log(`✓ Removed track "${removedTrack.name}" not in alternative playlist section`);
+              } else {
+                cy.log(`✓ Alternative playlist section not present - track removal validation passed`);
+              }
             });
-            cy.log('✓ Verified removed tracks are excluded from enhancement request');
-          } else {
-            cy.log('✓ No tracks marked as removed - validation passed');
-          }
-        } else {
-          cy.log('✓ Enhancement request processed without removed tracks');
+          });
+          cy.log('✓ Removed tracks not visible in enhanced playlist UI');
         }
       });
     } else {
-      // If no enhancement alias exists, just validate based on visible tracks
-      cy.get('body').then(($body) => {
-        const hasExtendedPlaylist = $body.text().includes('extended') || 
-                                   $body.text().includes('Enhanced') || 
-                                   $body.find('[data-testid="track-card"]').length > 0;
-        if (hasExtendedPlaylist) {
-          cy.log('✓ Extended playlist visible - removed tracks validation assumed successful');
-        }
-      });
+      cy.log('✓ No tracks marked as removed - validation passed');
     }
   });
 });
@@ -1739,42 +1802,37 @@ Then('the removed track should still not be visible in the queue', () => {
   // Verify that removed tracks remain hidden after page refresh
   cy.get('body', { timeout: 10000 }).should('be.visible');
   
-  cy.window().then((win) => {
-    const removedTracks = (win as any).__REMOVED_TRACKS__ || [];
-    if (removedTracks.length > 0) {
-      // Check that removed tracks are not visible in the UI
-      removedTracks.forEach((removedTrack: any) => {
-        cy.get('body').should('not.contain', removedTrack.name);
+  getRemovedTracks().then((removedTracks: any) => {
+    const tracks = Array.isArray(removedTracks) ? removedTracks : [];
+    if (tracks.length > 0) {
+      // Wait for page to fully load after refresh
+      cy.get('[data-testid="queue-section"]', { timeout: 8000 }).should('be.visible');
+      
+      // Check that removed tracks are not visible in the queue section
+      tracks.forEach((removedTrack: any) => {
+        cy.get('[data-testid="queue-tracks"]').then(($queueTracks) => {
+          const trackNames = $queueTracks.find('[data-testid="track-name"]')
+            .toArray()
+            .map(el => Cypress.$(el).text());
+          expect(trackNames).to.not.include(removedTrack.name);
+        });
       });
       cy.log('✓ Verified removed tracks are still not visible after refresh');
     } else {
-      // Fallback: check that queue has fewer tracks than expected
-      cy.get('body').then(($body) => {
-        if ($body.find('[data-testid="track-card"]').length > 0) {
-          cy.get('[data-testid="track-card"]').then(($tracks) => {
-            // Assume that if we have fewer than 5 tracks, some were removed
-            if ($tracks.length < 5) {
-              cy.log('✓ Queue appears to have fewer tracks - removal persisted');
-            } else {
-              cy.log('✓ Track removal validation skipped - no removed tracks found');
-            }
-          });
-        } else {
-          cy.log('✓ No track cards found - assuming removal persisted');
-        }
-      });
-    }
-  });
+      // Fallback: check that queue section is still functional
+      cy.get('[data-testid="queue-section"]').should('be.visible');
+      cy.log('✓ Queue section is visible and functional');
+    }  });
 });
 
 Then('the track should be visible in the queue again', () => {
   // Check that the undone track is visible in the queue
-  cy.window().then((win) => {
-    const removedTracks = (win as any).__REMOVED_TRACKS__ || [];
+  getRemovedTracks().then((removedTracks: any) => {
+    const tracks = Array.isArray(removedTracks) ? removedTracks : [];
     
-    if (removedTracks.length > 0) {
+    if (tracks.length > 0) {
       // Clear the removed tracks state since they should be restored
-      (win as any).__REMOVED_TRACKS__ = [];
+      clearRemovedTracks();
       
       // Check that we have at least one track visible in the queue
       cy.get('[data-testid="track-card"]', { timeout: 10000 })
@@ -1799,39 +1857,101 @@ Then('I should see a message about empty queue or a default playlist', () => {
   
   cy.get('body', { timeout: 10000 }).should('be.visible');
   
-  // Check for various possible empty state messages or behaviors
-  cy.get('body').then(($body) => {
-    const hasEmptyMessage = $body.text().toLowerCase().includes('empty') ||
-                          $body.text().toLowerCase().includes('no tracks') ||
-                          $body.text().toLowerCase().includes('play music to get started');
+  // Check for queue section first
+  cy.get('[data-testid="queue-section"]', { timeout: 10000 }).should('be.visible');
+  
+  // Check if queue has tracks or is empty
+  cy.get('[data-testid="queue-tracks"]').then(($queueTracks) => {
+    const hasTrackCards = $queueTracks.find('[data-testid="track-card"]').length > 0;
     
-    const hasDefaultPlaylist = $body.find('[data-testid="track-card"]').length > 0;
-    
-    if (hasEmptyMessage || hasDefaultPlaylist) {
-      cy.log('✓ App handles empty queue state appropriately');
+    if (hasTrackCards) {
+      cy.log('✓ Queue has tracks visible');
     } else {
-      // If no specific empty state handling, just verify the page is still functional
-      cy.log('✓ Page remains functional after removing all tracks');
+      // If no tracks in queue, check if there's appropriate messaging or handling
+      cy.get('body').then(($body) => {
+        const bodyText = $body.text().toLowerCase();
+        const hasEmptyMessage = bodyText.includes('empty') ||
+                              bodyText.includes('no tracks') ||
+                              bodyText.includes('play music to get started');
+          if (hasEmptyMessage) {
+          cy.log('✓ App shows appropriate empty queue message');
+        } else {
+          cy.log('✓ App handles empty queue state appropriately');
+        }
+      });
     }
   });
 });
 
 Then('the removed tracks should not be included in subsequent playlist requests', () => {
   // Verify that removed tracks are excluded from subsequent playlist generation requests
-  // This is similar to other validation steps but for subsequent requests
+  // This step should explicitly check the API request payload using stored requests
   
-  cy.window().then((win) => {
-    const removedTracks = (win as any).__REMOVED_TRACKS__ || [];
-    
-    if (removedTracks.length > 0) {
-      cy.log(`Validating that ${removedTracks.length} removed tracks are excluded from requests`);
+  getRemovedTracks().then((removedTracks: any) => {
+    const tracks = Array.isArray(removedTracks) ? removedTracks : [];
+    if (tracks.length > 0) {
+      cy.log(`Validating that ${tracks.length} removed tracks are excluded from requests`);
       
-      // Wait for potential API requests to complete
-      cy.wait(1000);
-      
-      // Since tracks are removed from the UI state, subsequent playlist requests
-      // should automatically exclude them. We just verify the state is maintained.
-      cy.log('✓ Removed tracks state maintained for subsequent requests');
+      // Check stored requests instead of trying to access potentially missing aliases
+      getLastSearchRequest().then((searchRequest: any) => {
+        if (searchRequest && searchRequest.tracks) {
+          // Explicitly check that each removed track is NOT in the stored search request
+          tracks.forEach((removedTrack: any) => {
+            const trackInRequest = searchRequest.tracks.some((track: any) => 
+              track.id === removedTrack.id || track.name === removedTrack.name
+            );
+            expect(trackInRequest, `Removed track "${removedTrack.name}" should not be in search request`).to.be.false;
+            cy.log(`✓ Confirmed removed track "${removedTrack.name}" is excluded from search request`);
+          });
+          
+          // Also verify that the request contains other tracks (not empty after removals)
+          expect(searchRequest.tracks, 'Search request should contain other tracks after removals').to.have.length.greaterThan(0);
+          cy.log(`✓ Search request contains ${searchRequest.tracks.length} other tracks after removals`);
+          
+          cy.log('✓ All removed tracks properly excluded from stored search request');
+        } else {
+          // Check stored playlist request if search request is not available
+          getLastPlaylistRequest().then((playlistRequest: any) => {
+            if (playlistRequest && playlistRequest.tracks) {
+              tracks.forEach((removedTrack: any) => {
+                const trackInRequest = playlistRequest.tracks.some((track: any) => 
+                  track.id === removedTrack.id || track.name === removedTrack.name
+                );
+                expect(trackInRequest, `Removed track "${removedTrack.name}" should not be in playlist request`).to.be.false;
+              });
+              
+              // Also verify that the request contains other tracks (not empty after removals)
+              expect(playlistRequest.tracks, 'Playlist request should contain other tracks after removals').to.have.length.greaterThan(0);
+              cy.log(`✓ Playlist request contains ${playlistRequest.tracks.length} other tracks after removals`);
+              
+              cy.log('✓ Removed tracks excluded from stored playlist request');
+            } else {              // Final fallback: check that UI doesn't contain removed tracks in the alternative playlist section
+              cy.log('⚠ No request payloads available - validating UI state in alternative playlist');
+              
+              // Wait for UI to be stable before checking
+              cy.get('[data-testid="alternative-playlist-section"]', { timeout: 5000 }).should('be.visible');
+              
+              tracks.forEach((removedTrack: any) => {
+                cy.get('[data-testid="alternative-playlist-tracks"]').should(($alternativeSection) => {
+                  const trackNames = $alternativeSection.find('[data-testid="track-name"]')
+                    .toArray()
+                    .map(el => Cypress.$(el).text());
+                  expect(trackNames).to.not.include(removedTrack.name);
+                });
+              });
+              
+              // Also check that there are still visible tracks in the UI
+              cy.get('[data-testid="track-card"]', { timeout: 5000 })
+                .should('exist')
+                .its('length')
+                .should('be.greaterThan', 0);
+              cy.log('✓ Other tracks still visible in UI after removals');
+              
+              cy.log('✓ Removed tracks not visible in UI - validation passed');
+            }
+          });
+        }
+      });
     } else {
       cy.log('✓ No removed tracks to validate');
     }
@@ -1843,10 +1963,10 @@ Then('the track should be included in the playlist generation request', () => {
   // Verify that the undone track is included back in playlist generation requests
   // This validates that undo functionality properly restores tracks to be considered
   
-  cy.window().then((win) => {
-    const removedTracks = (win as any).__REMOVED_TRACKS__ || [];
+  getRemovedTracks().then((removedTracks: any) => {
+    const tracks = Array.isArray(removedTracks) ? removedTracks : [];
     
-    if (removedTracks.length === 0) {
+    if (tracks.length === 0) {
       // If no removed tracks, the undo was successful and tracks should be included
       cy.log('✓ No removed tracks found - undo appears successful');
       

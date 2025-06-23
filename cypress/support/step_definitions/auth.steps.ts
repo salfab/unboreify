@@ -87,13 +87,14 @@ Then('I should see an error boundary', () => {
     if (bodyText.includes('Error') || bodyText.includes('Something went wrong') || bodyText.includes('Failed')) {
       cy.log('Error state detected');
       // Just verify error text exists somewhere
-      cy.get('body').should('contain.text', /.*(Error|Something went wrong|Failed).*/);
-    } else {
+      cy.get('body').should('contain.text', /.*(Error|Something went wrong|Failed).*/);    } else {
       // If no explicit error, check that we're in an unauthenticated state
-      // The page shows content even when not authenticated, so check for login button or "Unboreify me" button
+      // The page shows content even when not authenticated, so check for login button or homepage elements
       cy.get('body').should('satisfy', ($body) => {
+        const hasHomepageButton = $body.find('[data-testid="homepage-main-button"]').length > 0;
+        const hasHomepageTitle = $body.find('[data-testid="homepage-title"]').length > 0;
         const text = $body.text();
-        return text.includes('Login with Spotify') || text.includes('Unboreify me') || text.includes('Make your Spotify playlists less boring');
+        return hasHomepageButton || hasHomepageTitle || text.includes('Login with Spotify') || text.includes('Unboreify me') || text.includes('Make your Spotify playlists less boring');
       });
     }
   });

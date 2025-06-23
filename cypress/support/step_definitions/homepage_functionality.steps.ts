@@ -4,7 +4,9 @@ import { Given, When, Then } from '@badeball/cypress-cucumber-preprocessor';
 
 // Homepage display steps
 Then('I should see the Unboreify branding', () => {
-  cy.contains('Unboreify').should('be.visible');
+  cy.get('[data-testid="homepage-title"]').should('be.visible').and('contain', 'Unboreify');
+  cy.get('[data-testid="homepage-subtitle"]').should('be.visible').and('contain', 'Make your Spotify playlists less boring');
+  cy.get('[data-testid="homepage-logo"]').should('be.visible');
 });
 
 Then('I should see the application footer', () => {
@@ -214,8 +216,8 @@ Then('I should see the mobile-optimized navigation', () => {
 });
 
 Then('the page should be responsive for mobile', () => {
-  cy.get('body').should('be.visible');
-  cy.contains('Unboreify').should('be.visible');
+  cy.get('[data-testid="homepage-container"]').should('be.visible');
+  cy.get('[data-testid="homepage-title"]').should('be.visible').and('contain', 'Unboreify');
 });
 
 Then('I should see the tablet-optimized navigation', () => {
@@ -223,8 +225,8 @@ Then('I should see the tablet-optimized navigation', () => {
 });
 
 Then('the page should be responsive for tablet', () => {
-  cy.get('body').should('be.visible');
-  cy.contains('Unboreify').should('be.visible');
+  cy.get('[data-testid="homepage-container"]').should('be.visible');
+  cy.get('[data-testid="homepage-title"]').should('be.visible').and('contain', 'Unboreify');
 });
 
 Then('the navigation should adapt for mobile viewports', () => {

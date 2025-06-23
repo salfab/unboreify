@@ -4,7 +4,7 @@ import webpack from '@cypress/webpack-preprocessor';
 
 export default defineConfig({
   e2e: {
-    baseUrl: 'http://localhost:5173',
+    baseUrl: 'http://localhost:8888',
     async setupNodeEvents(on, config) {
       // Add cucumber preprocessor plugin
       await addCucumberPreprocessorPlugin(on, config);

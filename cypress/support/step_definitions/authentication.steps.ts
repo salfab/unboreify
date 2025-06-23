@@ -72,8 +72,8 @@ Then('the application should handle the API error gracefully', () => {
 
 Then('the app should remain functional', () => {
   // Verify basic app functionality still works
-  cy.get('body').should('be.visible');
-  cy.contains('Unboreify').should('be.visible');
+  cy.get('[data-testid="homepage-container"]').should('be.visible');
+  cy.get('[data-testid="homepage-title"]').should('be.visible').and('contain', 'Unboreify');
 });
 
 // OAuth callback steps

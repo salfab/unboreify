@@ -18,8 +18,7 @@ const HomePage: React.FC = () => {
     }
   };
 
-  return (
-    <Container maxWidth="sm">
+  return (    <Container maxWidth="sm">
       <Box
         display="flex"
         flexDirection="column"
@@ -27,12 +26,13 @@ const HomePage: React.FC = () => {
         justifyContent="center"
         minHeight="75vh"
         textAlign="center"
+        data-testid="homepage-container"
       >
-        <Avatar alt="Unboreify logo" src={logo} sx={{ width: 128, height: 128, marginBottom: 2 }} />
-        <Typography variant="h3" component="h1" gutterBottom>
+        <Avatar alt="Unboreify logo" src={logo} sx={{ width: 128, height: 128, marginBottom: 2 }} data-testid="homepage-logo" />
+        <Typography variant="h3" component="h1" gutterBottom data-testid="homepage-title">
           Unboreify
         </Typography>
-        <Typography variant="h6" gutterBottom>
+        <Typography variant="h6" gutterBottom data-testid="homepage-subtitle">
           Make your Spotify playlists less boring
         </Typography>
         <Button
@@ -40,6 +40,7 @@ const HomePage: React.FC = () => {
           color="primary"
           onClick={handleButtonClick}
           sx={{ marginTop: 2 }}
+          data-testid="homepage-main-button"
         >
           {token ? 'Unboreify me' : 'Login with Spotify'}
         </Button>
