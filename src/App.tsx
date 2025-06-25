@@ -74,11 +74,12 @@ const App: React.FC = () => {
                   {/* Live Music Features Button */}
                   <IconButton color="inherit" onClick={handleMusicMenu} data-testid="mobile-music-button">
                     <LiveMusicIcon data-testid="SpeakerGroupIcon" />
-                  </IconButton>{/* Live Music Menu */}
+                  </IconButton>                  {/* Live Music Menu */}
                   <Menu
                     anchorEl={musicMenuAnchorEl}
                     open={openMusicMenu}
                     onClose={handleClose}
+                    disableScrollLock={true}
                     anchorOrigin={{
                       vertical: 'top',
                       horizontal: 'right',
@@ -107,13 +108,22 @@ const App: React.FC = () => {
                     anchorEl={anchorEl}
                     open={open}
                     onClose={handleClose}
+                    disableScrollLock={true}
                     anchorOrigin={{
-                      vertical: 'top',
+                      vertical: 'bottom',
                       horizontal: 'right',
                     }}
                     transformOrigin={{
                       vertical: 'top',
                       horizontal: 'right',
+                    }}
+                    slotProps={{
+                      paper: {
+                        sx: {
+                          mt: 1,
+                          minWidth: 200,
+                        }
+                      }
                     }}
                   >
                     <MenuItem disabled>
@@ -141,13 +151,22 @@ const App: React.FC = () => {
                     anchorEl={anchorEl}
                     open={open}
                     onClose={handleClose}
+                    disableScrollLock={true}
                     anchorOrigin={{
-                      vertical: 'top',
+                      vertical: 'bottom',
                       horizontal: 'right',
                     }}
                     transformOrigin={{
                       vertical: 'top',
                       horizontal: 'right',
+                    }}
+                    slotProps={{
+                      paper: {
+                        sx: {
+                          mt: 1,
+                          minWidth: 200,
+                        }
+                      }
                     }}
                   >
                     <MenuItem disabled>

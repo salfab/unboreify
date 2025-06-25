@@ -47,9 +47,10 @@ interface Setlist {
   };
 }
 
-interface ConcertSetlistPageProps {}
+// No props interface needed for this component
+// interface ConcertSetlistPageProps {}
 
-const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
+const ConcertSetlistPage: FC = () => {
   const { searchTracks, startPlayback, getDevices, createPlaylist, addTracksToPlaylist, currentUser } = useSpotifyApi();
 
   const [artistName, setArtistName] = useState<string>('');  // Stores artist name, whether typed or selected
@@ -60,10 +61,9 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
   const [trackStatuses, setTrackStatuses] = useState<{ song: string; status: 'loading' | 'success' | 'failure' | 'approximation'; track?: Track }[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isTracksReady, setIsTracksReady] = useState<boolean>(false); 
-
   // Debounced function to search artists after 0.5 seconds of inactivity
-  const fetchArtists = useCallback(
-    debounce(async (name: string) => {
+  const fetchArtists = useMemo(
+    () => debounce(async (name: string) => {
       if (!name) return;
       try {
         const artistResults = await searchArtistByName(name);
@@ -134,8 +134,7 @@ const ConcertSetlistPage: FC<ConcertSetlistPageProps> = () => {
           }
         } else {
           fetchedTracks.push({ song, status: 'success', track: preferredTrack });
-        }
-      } catch (error) {
+        }      } catch {
         fetchedTracks.push({ song, status: 'failure' });
       }
     }

@@ -5,11 +5,10 @@ import useSpotifyApi from "../hooks/useSpotifyApi";
 import SaveToSpotifyPlaylist from "./SaveToSpotifyPlaylist";
 import { Track } from "../services/spotifyService";
 
-interface FestivalPageProps {
-  // Define any other props you need
-}
+// No props interface needed for this component
+// interface FestivalPageProps {}
 
-const FestivalPage: FC<FestivalPageProps> = () => {
+const FestivalPage: FC = () => {
   const { getArtistTopTracks, getArtistId, getDevices, startPlayback, createPlaylist, addTracksToPlaylist, currentUser } = useSpotifyApi();
   const [artistInput, setArtistInput] = useState<string>('');
   const [artistsList, setArtistsList] = useState<string[]>([]);

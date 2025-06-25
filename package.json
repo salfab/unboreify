@@ -11,7 +11,7 @@
     "preview": "vite preview",
     "cypress:open": "cypress open",
     "cypress:run": "cypress run",
-    "test:gherkin": "cypress run --spec 'cypress/e2e/**/*.feature'",
+    "test:gherkin": "cypress run --spec 'cypress/e2e/**/*.feature'"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

@@ -16,11 +16,13 @@ import {
 import { PlaylistAdd as PlaylistAddIcon } from '@mui/icons-material';
 import { Track } from '../services/spotifyService';
 
+import { SxProps, Theme } from '@mui/material/styles';
+
 interface SaveToSpotifyPlaylistProps {
   tracks: Track[];
   defaultPlaylistName: string;
   onSavePlaylist: (playlistName: string, tracks: Track[]) => Promise<void>;
-  sx?: any;
+  sx?: SxProps<Theme>;
 }
 
 export const SaveToSpotifyPlaylist: React.FC<SaveToSpotifyPlaylistProps> = ({

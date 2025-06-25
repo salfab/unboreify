@@ -1,4 +1,4 @@
-exports.handler = async (event, context) => {
+exports.handler = async (event) => {
   const { path, queryStringParameters } = event;
   
   // Extract the API path and endpoint

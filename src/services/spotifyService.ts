@@ -27,6 +27,16 @@ export interface PlaylistTrack {
   };
 }
 
+export interface SpotifyPlaylist {
+  id: string;
+  name: string;
+  description: string;
+  images: { url: string }[];
+  tracks: {
+    total: number;
+  };
+}
+
 export interface PlaylistResponse {
   tracks: { items: { track: Track }[] };
   name: string;
@@ -120,9 +130,9 @@ const createHeaders = (token: string) => ({
 // Utility function to refresh the token and retry the request
 const handleRequest = async <T>(token: string, request: (safeToken: string) => Promise<T>): Promise<T> => {
   try {
-    return await request(token);
-  } catch (error: any) {
-    if (error.response && error.response.status === 401) {
+    return await request(token);  } catch (error: unknown) {
+    const axiosError = error as { response?: { status: number } };
+    if (axiosError.response && axiosError.response.status === 401) {
 
       const newToken = await TokenManager.refreshToken();
       return await request(newToken);
@@ -137,12 +147,12 @@ const getRequest = async <T>(url: string, token: string): Promise<T> => {
 };
 
 // Utility function for POST requests
-const postRequest = async (url: string, token: string, data: any = {}) => {
+const postRequest = async (url: string, token: string, data: Record<string, unknown> = {}) => {
   return handleRequest(token, (safeToken) => axios.post(url, data, createHeaders(safeToken)).then((response) => response.data));
 };
 
 // Utility function for PUT requests
-const putRequest = async (url: string, token: string, data: any = {}) => {
+const putRequest = async (url: string, token: string, data: Record<string, unknown> = {}) => {
   return handleRequest(token, (safeToken) => axios.put(url, data, createHeaders(safeToken)).then((response) => response.data));
 };
 
@@ -150,8 +160,8 @@ export const getCurrentTrack = async (token: string) => {
   return await getRequest<Track>(getSpotifyApiUrl('/me/player/currently-playing'), token);
 };
 
-export const getUserPlaylists = async (token: string) => {
-  const data = await getRequest<{ items: any[] }>(getSpotifyApiUrl('/me/playlists'), token);
+export const getUserPlaylists = async (token: string): Promise<SpotifyPlaylist[]> => {
+  const data = await getRequest<{ items: SpotifyPlaylist[] }>(getSpotifyApiUrl('/me/playlists'), token);
   return data.items;
 };
 
@@ -178,12 +188,19 @@ export const getQueue = async (token: string): Promise<SpotifyQueue> => {
   return await getRequest<SpotifyQueue>(getSpotifyApiUrl('/me/player/queue'), token);
 };
 
-export const getCurrentUser = async (token: string) => {
-  return await getRequest<any>(getSpotifyApiUrl('/me'), token);
+export interface SpotifyUser {
+  id: string;
+  display_name: string;
+  email: string;
+  images: { url: string }[];
+}
+
+export const getCurrentUser = async (token: string): Promise<SpotifyUser> => {
+  return await getRequest<SpotifyUser>(getSpotifyApiUrl('/me'), token);
 };
 
-export const getArtistTopTracks = async (token: string, artistId: string) => {
-  const data = await getRequest<{ tracks: any[] }>(getSpotifyApiUrl(`/artists/${artistId}/top-tracks?market=US`), token);
+export const getArtistTopTracks = async (token: string, artistId: string): Promise<Track[]> => {
+  const data = await getRequest<{ tracks: Track[] }>(getSpotifyApiUrl(`/artists/${artistId}/top-tracks?market=US`), token);
   return data.tracks;
 };
 /**
@@ -279,11 +296,11 @@ const fetchTracksInBatches = async (trackIds: string[], token: string): Promise<
  * @returns A promise that resolves to a Track object.
  */
 export const getTrackDetails = async (trackId: string, token: string): Promise<Track> => {
-  const data = await getRequest<any>(getSpotifyApiUrl(`/tracks/${trackId}`), token);
+  const data = await getRequest<Track>(getSpotifyApiUrl(`/tracks/${trackId}`), token);
   return {
     name: data.name,
     uri: data.uri,
-    artists: data.artists.map((artist: any) => ({ name: artist.name, id: artist.id })),
+    artists: data.artists.map((artist) => ({ name: artist.name, id: artist.id })),
     album: {
       name: data.album.name,
       images: data.album.images,

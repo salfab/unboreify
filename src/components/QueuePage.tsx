@@ -26,7 +26,7 @@ import { useErrorBoundary } from 'react-error-boundary';
 import PlaylistPresenter from './PlaylistPresenter';
 import SaveToSpotifyPlaylist from './SaveToSpotifyPlaylist';
 import { IAuthContext, AuthContext } from 'react-oauth2-code-pkce';
-import { SpotifyQueue, Track, PlaylistResponse } from '../services/spotifyService';
+import { SpotifyQueue, Track, PlaylistResponse, SpotifyPlaylist } from '../services/spotifyService';
 import { useNavigate } from 'react-router-dom';
 import { getPlaylistMultiplier } from '../services/localStorageService';
 
@@ -60,7 +60,7 @@ const QueuePage: React.FC = () => {
   const [alternativePlaylist, setAlternativePlaylist] = useState<Track[]>([]);
   const [currentAlternativePlaylistSourceTracks, setCurrentAlternativePlaylistSourceTracks] = useState<{ tracks: string[], mode: 'extend' | 'alternative' }>({ tracks: [], mode: 'alternative' });
   const [sourceTracks, setSourceTracks] = useState<Track[]>([]);
-  const [playlists, setPlaylists] = useState<any[]>([]);
+  const [playlists, setPlaylists] = useState<SpotifyPlaylist[]>([]);
   const [progress, setProgress] = useState<{ phase: string; percentage: number }>({ phase: '', percentage: 0 });
   const [isComplete, setIsComplete] = useState<boolean>(true);
   const [queueOpen, setQueueOpen] = useState<boolean>(!isMobile);
@@ -228,7 +228,7 @@ const QueuePage: React.FC = () => {
       console.error(error);
       throw error;
     }
-  }, [fetchQueue, fetchUserPlaylists]);
+  }, [fetchQueue, fetchUserPlaylists, token]);
 
   useEffect(() => {
     if (sourceTracks.length > 0) {
@@ -270,7 +270,7 @@ const QueuePage: React.FC = () => {
         .catch(showBoundary);
       // TODO: check if we should we null out the abort controller, or do we risk having some race conditions and clear out the wrong one?
     }
-  }, [sourceTracks, mode, updateProgress, showBoundary]);
+  }, [sourceTracks, mode, currentAlternativePlaylistSourceTracks.mode, currentAlternativePlaylistSourceTracks.tracks, token, updateProgress, showBoundary]);
 
   const toggleQueue = () => {
     setQueueOpen(!queueOpen);

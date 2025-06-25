@@ -101,8 +101,7 @@ export const buildAlternativePlaylist = async (
 
         // Save the updated cache back to session storage
         try {
-          sessionStorage.setItem('trackCache', JSON.stringify(cachedTracks));
-        } catch (error) {
+          sessionStorage.setItem('trackCache', JSON.stringify(cachedTracks));        } catch {
           console.warn('Session storage limit exceeded, clearing cache.');
           sessionStorage.removeItem('trackCache');
         }
