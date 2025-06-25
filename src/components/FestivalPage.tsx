@@ -138,7 +138,7 @@ const FestivalPage: FC<FestivalPageProps> = () => {
           {/* Render Top Tracks */}
           {topTracks.length > 0 && (
             <>
-              {topTracks.reduce((acc: JSX.Element[], track, index) => {
+              {topTracks.reduce((acc: React.ReactElement[], track, index) => {
                 const prevTrack = topTracks[index - 1];
                 const isNewArtist = !prevTrack || prevTrack.artists[0].name !== track.artists[0].name;
 

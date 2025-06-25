@@ -43,8 +43,8 @@ const Settings: FC<SettingsProps> = ({ open, onClose, currentPlaylistMultiplier,
             onClose={onClose} 
             fullWidth 
             data-testid="settings-dialog"
-            BackdropProps={{
-                'data-testid': 'settings-backdrop'
+            slotProps={{
+                backdrop: { 'data-testid': 'settings-backdrop' } as any
             }}
         >
             <DialogTitle>Settings</DialogTitle>

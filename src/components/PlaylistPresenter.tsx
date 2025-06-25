@@ -1,6 +1,12 @@
 import React, { useCallback, useState } from 'react';
 import TrackCard from './TrackCard';
-import { Typography, Grid, Collapse, IconButton, useMediaQuery, useTheme, Tooltip } from '@mui/material';
+import Typography from '@mui/material/Typography';
+import Collapse from '@mui/material/Collapse';
+import IconButton from '@mui/material/IconButton';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import Tooltip from '@mui/material/Tooltip';
+import { useTheme } from '@mui/material/styles';
+import Grid from '@mui/material/Grid';
 import { Track } from '../services/spotifyService';
 import { ExpandLess, ExpandMore, QueueMusic as QueueMusicIcon, AutoFixHigh as AutoFixHighIcon } from '@mui/icons-material';
 
@@ -24,7 +30,7 @@ const PlaylistPresenter: React.FC<PlaylistPresenterProps> = ({ name, items, onBa
     }, []);
 
     return (
-        <Grid item xs={12} sm={12}>
+        <Grid container>
             <Typography 
                 variant="h4" 
                 gutterBottom
@@ -50,9 +56,10 @@ const PlaylistPresenter: React.FC<PlaylistPresenterProps> = ({ name, items, onBa
                     </IconButton>
                 )}
             </Typography>
-            <Grid container spacing={2}>                <Collapse in={isPlaylistOpen || !isMobile} timeout="auto" unmountOnExit>
+            <Grid size={12}>
+                <Collapse in={isPlaylistOpen || !isMobile} timeout="auto" unmountOnExit>
                     {items.map((track) => (
-                        <Grid item xs={12} sm={12} key={track.id}>
+                        <Grid key={track.id} size={12} sx={{ mb: 1 }}>
                             <TrackCard 
                                 track={track} 
                                 onRemove={onRemoveTrack}

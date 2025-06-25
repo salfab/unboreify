@@ -1,8 +1,14 @@
 import React, { useContext } from 'react';
-import { Container, Box, Typography, Button, Avatar } from '@mui/material';
+import Container from '@mui/material/Container';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
+import Avatar from '@mui/material/Avatar';
 import { useNavigate } from 'react-router-dom';
-import logo from '../../public/logo.png';
 import { IAuthContext, AuthContext } from 'react-oauth2-code-pkce';
+
+// Use public asset URL for logo
+const logoUrl = '/logo.png';
 
 const HomePage: React.FC = () => {
   const {token, logIn} = useContext<IAuthContext>(AuthContext)
@@ -28,7 +34,7 @@ const HomePage: React.FC = () => {
         textAlign="center"
         data-testid="homepage-container"
       >
-        <Avatar alt="Unboreify logo" src={logo} sx={{ width: 128, height: 128, marginBottom: 2 }} data-testid="homepage-logo" />
+        <Avatar alt="Unboreify logo" src={logoUrl} sx={{ width: 128, height: 128, marginBottom: 2 }} data-testid="homepage-logo" />
         <Typography variant="h3" component="h1" gutterBottom data-testid="homepage-title">
           Unboreify
         </Typography>

@@ -1,13 +1,27 @@
 import React, { useEffect, useState, useCallback, useRef, useContext } from 'react';
-import { Grid, Typography, Box, LinearProgress, Tooltip, IconButton, Collapse, Divider, ListItem, ListItemText, ListItemIcon, InputAdornment, TextField, List } from '@mui/material';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import Grid from '@mui/material/Grid';
+import LinearProgress from '@mui/material/LinearProgress';
+import Tooltip from '@mui/material/Tooltip';
+import IconButton from '@mui/material/IconButton';
+import Collapse from '@mui/material/Collapse';
+import Divider from '@mui/material/Divider';
+import ListItem from '@mui/material/ListItem';
+import ListItemText from '@mui/material/ListItemText';
+import ListItemAvatar from '@mui/material/ListItemAvatar';
+import Avatar from '@mui/material/Avatar';
+import InputAdornment from '@mui/material/InputAdornment';
+import TextField from '@mui/material/TextField';
+import List from '@mui/material/List';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import { useTheme } from '@mui/material/styles';
 import SearchIcon from '@mui/icons-material/Search';
 import { AutoAwesome as AutoAwesomeIcon, Refresh as RefreshIcon, PlayArrow as PlayArrowIcon, AutoFixHigh as AutoFixHighIcon, AutoMode as AutoModeIcon, LibraryMusic as LibraryMusicIcon } from '@mui/icons-material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import useSpotifyApi from '../hooks/useSpotifyApi'; // Adjust the import path as needed
 import { buildAlternativePlaylist, trimPlaylistCyclesWithinQueue, ProgressCallback } from '../services/playlistService';
 import TrackCard from './TrackCard';
-import useMediaQuery from '@mui/material/useMediaQuery';
-import { useTheme } from '@mui/material/styles';
 import { useErrorBoundary } from 'react-error-boundary';
 import PlaylistPresenter from './PlaylistPresenter';
 import SaveToSpotifyPlaylist from './SaveToSpotifyPlaylist';
@@ -268,19 +282,21 @@ const QueuePage: React.FC = () => {
     setFilteredPlaylistTracks([]);
     fetchQueue(false);
   };
-
   return (
     <Grid container spacing={3} sx={{ pt: 2 }}>
-      {!isComplete && (        <Grid item xs={12}>
+      {!isComplete && (
+        <Grid size={12}>
           <Typography variant="h4" gutterBottom data-testid="progress-section">
             Progress
-          </Typography>          <Box>
+          </Typography>
+          <Box>
             <Typography variant="body1" data-testid="progress-phase">{progress.phase}</Typography>
             <LinearProgress variant="determinate" value={progress.percentage} data-testid="loading-spinner" />
           </Box>
         </Grid>
       )}
-      {isComplete && showProcessMessageBar && (        <Grid item xs={12} sx={{ textAlign: 'center' }}>
+      {isComplete && showProcessMessageBar && (
+        <Grid size={12} sx={{ textAlign: 'center' }}>
           <Typography variant="h4" gutterBottom data-testid="unboreified-message">
             You have been unboreified!
           </Typography>
@@ -348,13 +364,13 @@ const QueuePage: React.FC = () => {
                   </Typography>
                 </Box>
               </IconButton>
-            </Tooltip>
-          </Box>
+            </Tooltip>          </Box>
 
         </Grid>
       )}
       {showQueue ? (
-        <>          <Grid item xs={12}>
+        <>
+          <Grid size={12}>
             <Typography variant="h4" gutterBottom data-testid="currently-playing-section">
               Currently Playing
             </Typography>
@@ -366,7 +382,8 @@ const QueuePage: React.FC = () => {
               <>Play music to get started</>
             )}
           </Grid>
-          <Grid item xs={12} sm={6}>            <Typography variant="h4" gutterBottom data-testid="queue-section">
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Typography variant="h4" gutterBottom data-testid="queue-section">
               Queue
               {/* TODO create a variable for this to make it more clear */}
               {((isComplete && !showProcessMessageBar) || !isComplete) &&
@@ -421,13 +438,14 @@ const QueuePage: React.FC = () => {
                     key={`${track.uri}-${i}`} 
                     onRemove={removeFromQueue}
                   />
-                ))}
-              </div>
+                ))}              </div>
             </Collapse>
           </Grid>
 
         </>
-      ) : (        <Grid item xs={12} sm={6}>          {selectedPlaylist && (
+      ) : (
+        <Grid size={{ xs: 12, sm: 6 }}>
+          {selectedPlaylist && (
             <PlaylistPresenter 
               onBackToQueue={handleBackToQueue} 
               items={filteredPlaylistTracks} 
@@ -440,7 +458,8 @@ const QueuePage: React.FC = () => {
           )}
         </Grid>
       )}
-      <Grid item xs={12} sm={6}>        <Typography
+      <Grid size={{ xs: 12, sm: 6 }}>
+        <Typography
           variant="h4"
           gutterBottom
           display="flex"
@@ -466,11 +485,10 @@ const QueuePage: React.FC = () => {
               track={track} 
               key={track.uri} 
               onRemove={removeFromAlternativePlaylist}
-            />
-          ))}
+            />          ))}
         </div>
       </Grid>
-      <Grid item xs={12}>
+      <Grid size={12}>
         <Typography variant="h4" gutterBottom>
           Groove to These Playlists!
         </Typography>
@@ -489,12 +507,11 @@ const QueuePage: React.FC = () => {
             ),
           }}
           sx={{ marginBottom: 2, visibility: 'collapse', height: 0 }}
-        />
-        <List>
+        />        <List>
           {filteredPlaylists.map((playlist) => (
             <ListItem
               key={playlist.id}
-              button
+              component="button"
               onClick={() => {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 return fetchPlaylistTracks(playlist.id);
@@ -503,14 +520,25 @@ const QueuePage: React.FC = () => {
                 padding: '8px 16px',
                 marginBottom: 1,
                 borderRadius: 1,
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer',
+                width: '100%',
+                textAlign: 'left',
                 '&:hover': {
                   backgroundColor: 'rgba(0, 0, 0, 0.04)',
                 },
               }}
             >
-              <ListItemIcon>
-                <LibraryMusicIcon />
-              </ListItemIcon>
+              <ListItemAvatar>
+                <Avatar
+                  src={playlist.images?.[0]?.url}
+                  alt={playlist.name}
+                  sx={{ width: 56, height: 56 }}
+                >
+                  <LibraryMusicIcon />
+                </Avatar>
+              </ListItemAvatar>
               <ListItemText
                 primary={playlist.name}
                 secondary={`${playlist.description ? `${playlist.description} - ` : ''}${playlist.tracks.total} tracks`}

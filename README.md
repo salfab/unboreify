@@ -173,26 +173,27 @@ This project includes comprehensive end-to-end testing using Cypress with specif
 # Copy environment template and add your credentials
 cp .env.cypress .env.local
 
-# Run tests using the helper script
-./run-tests.sh
-
-# Or run tests directly
+# Run tests directly
 pnpm test:e2e
 ```
 
 **Test Commands:**
 
 ```bash
-pnpm cypress:open      # Interactive test runner
-pnpm test:e2e          # Headless test execution
-pnpm test:e2e:headed   # Tests with browser visible
+pnpm cypress:open           # Interactive test runner (all tests)
+pnpm cypress:run            # Run all tests headless
+pnpm test:gherkin           # Run Gherkin .feature files
+pnpm test:gherkin:headed    # Run Gherkin tests with browser visible
 ```
 
 **Test Suites:**
 
-- **Redirections** (`redirections.cy.ts`) - App routing and navigation
-- **OAuth Integration** (`oauth.cy.ts`) - Spotify authentication flows
-- **App Functionality** (`app-functionality.cy.ts`) - Core features
+- **API Redirects** (`api_redirects.feature`) - API proxy and redirection tests
+- **Authentication** (`authentication.feature`) - Spotify authentication flows
+- **App Features** (`app_features.feature`) - Core application functionality
+- **Homepage** (`homepage_functionality.feature`) - Homepage behavior
+- **Navigation** (`navigation.feature`) - App routing and navigation
+- **Queue Management** (`queue_management.feature`) - Playlist queue features
 
 ### Test Configuration
 
