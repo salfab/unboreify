@@ -512,6 +512,7 @@ const QueuePage: React.FC = () => {
             <ListItem
               key={playlist.id}
               component="button"
+              data-testid="playlist-card"
               onClick={() => {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 return fetchPlaylistTracks(playlist.id);

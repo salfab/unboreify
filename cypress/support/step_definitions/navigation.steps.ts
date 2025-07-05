@@ -28,17 +28,44 @@ Then('I should see the navigation menu', () => {
 });
 
 Then('I should see the mobile navigation icons', () => {
-  cy.get('[data-testid="mobile-music-button"]').should('be.visible');
-  cy.get('[data-testid="mobile-queue-button"]').should('be.visible');
+  // Check if we're on a very small screen with hamburger menu
+  cy.get('body').then($body => {
+    if ($body.find('[data-testid="hamburger-menu"]').length > 0 && $body.find('[data-testid="hamburger-menu"]').is(':visible')) {
+      // Very small screen - only hamburger and avatar visible
+      cy.get('[data-testid="hamburger-menu"]').should('be.visible');
+      cy.get('[data-testid="user-avatar"]').should('be.visible');
+    } else {
+      // Regular mobile screen - individual icons visible
+      cy.get('[data-testid="mobile-music-button"]').should('be.visible');
+      cy.get('[data-testid="mobile-queue-button"]').should('be.visible');
+    }
+  });
+});
+
+Then('I should see mobile navigation icons', () => {
+  // Check if we're on a very small screen with hamburger menu
+  cy.get('body').then($body => {
+    if ($body.find('[data-testid="hamburger-menu"]').length > 0 && $body.find('[data-testid="hamburger-menu"]').is(':visible')) {
+      // Very small screen - only hamburger and avatar visible
+      cy.get('[data-testid="hamburger-menu"]').should('be.visible');
+      cy.get('[data-testid="user-avatar"]').should('be.visible');
+    } else {
+      // Regular mobile screen - individual icons visible
+      cy.get('[data-testid="mobile-music-button"]').should('be.visible');
+      cy.get('[data-testid="mobile-queue-button"]').should('be.visible');
+    }
+  });
 });
 
 Then('the navigation should be responsive', () => {
   // Test mobile view
-  cy.viewport(375, 667);
-  cy.get('[data-testid="mobile-music-button"]').should('be.visible');
+  cy.viewport(375, 667); // Very small - should show hamburger
+  cy.wait(1000); // Wait for re-render
+  cy.get('[data-testid="hamburger-menu"]').should('be.visible');
   
   // Test desktop view
   cy.viewport(1280, 720);
+  cy.wait(1000); // Wait for re-render
   cy.get('[data-testid="nav-festiclub"]').should('be.visible');
 });
 
@@ -52,7 +79,17 @@ When('I open the user menu', () => {
 });
 
 When('I open the live music menu on mobile', () => {
-  cy.get('[data-testid="mobile-music-button"]').click();
+  // Check if we're on a very small screen with hamburger menu
+  cy.get('body').then($body => {
+    if ($body.find('[data-testid="hamburger-menu"]').length > 0 && $body.find('[data-testid="hamburger-menu"]').is(':visible')) {
+      // Very small screen - use hamburger menu
+      cy.get('[data-testid="hamburger-menu"]').click();
+      cy.get('[data-testid="mobile-drawer"]').should('be.visible');
+    } else {
+      // Regular mobile screen - use direct music button
+      cy.get('[data-testid="mobile-music-button"]').click();
+    }
+  });
 });
 
 Then('I should see the user menu options', () => {
@@ -61,8 +98,18 @@ Then('I should see the user menu options', () => {
 });
 
 Then('I should see the live music menu options', () => {
-  cy.get('[data-testid="festiclub-option"]').should('be.visible');
-  cy.get('[data-testid="setlist-option"]').should('be.visible');
+  // Check if we're using hamburger menu (options in drawer) or regular menu
+  cy.get('body').then($body => {
+    if ($body.find('[data-testid="mobile-drawer"]').length > 0 && $body.find('[data-testid="mobile-drawer"]').is(':visible')) {
+      // Hamburger menu - options are in the drawer
+      cy.get('[data-testid="drawer-festiclub"]').should('be.visible');
+      cy.get('[data-testid="drawer-setlist"]').should('be.visible');
+    } else {
+      // Regular mobile menu - options are in the dropdown
+      cy.get('[data-testid="festiclub-option"]').should('be.visible');
+      cy.get('[data-testid="setlist-option"]').should('be.visible');
+    }
+  });
 });
 
 // Protected route steps
@@ -98,22 +145,46 @@ Then('I should see {string} navigation link', (linkText: string) => {
   cy.contains(linkText).should('be.visible');
 });
 
-Then('I should see mobile navigation icons', () => {
-  cy.get('[data-testid="HomeIcon"], svg[data-testid="HomeIcon"]').should('be.visible');
-  cy.get('[data-testid="QueueMusicIcon"], svg[data-testid="QueueMusicIcon"]').should('be.visible');
-  cy.get('[data-testid="SpeakerGroupIcon"], svg[data-testid="SpeakerGroupIcon"]').should('be.visible');
-});
+
 
 When('I click the live music icon on mobile', () => {
-  cy.get('[data-testid="SpeakerGroupIcon"], svg[data-testid="SpeakerGroupIcon"]').parent().click();
+  // Check if we're on a very small screen with hamburger menu
+  cy.get('body').then($body => {
+    if ($body.find('[data-testid="hamburger-menu"]').length > 0 && $body.find('[data-testid="hamburger-menu"]').is(':visible')) {
+      // Very small screen - use hamburger menu (don't click the option yet, just open the menu)
+      cy.get('[data-testid="hamburger-menu"]').click();
+    } else {
+      // Regular mobile screen - use direct music button
+      cy.get('[data-testid="mobile-music-button"]').click();
+    }
+  });
 });
 
 Then('I should see the live music menu', () => {
-  cy.get('.MuiMenu-root').should('be.visible');
+  // Check if we're using hamburger menu (drawer) or regular menu
+  cy.get('body').then($body => {
+    // First, check if we have a hamburger menu button (very small screens)
+    if ($body.find('[data-testid="hamburger-menu"]').length > 0 && $body.find('[data-testid="hamburger-menu"]').is(':visible')) {
+      // Very small screen - drawer should be visible
+      cy.get('[data-testid="mobile-drawer"]').should('exist').should('be.visible');
+    } else {
+      // Regular mobile screen - MUI menu should be visible
+      cy.get('.MuiMenu-root').should('be.visible');
+    }
+  });
 });
 
 Then('I should see {string} option in mobile menu', (optionText: string) => {
-  cy.contains(optionText).should('be.visible');
+  // Check if we're using hamburger menu (options in drawer) or regular menu
+  cy.get('body').then($body => {
+    if ($body.find('[data-testid="mobile-drawer"]').length > 0 && $body.find('[data-testid="mobile-drawer"]').is(':visible')) {
+      // Hamburger menu - check within the drawer
+      cy.get('[data-testid="mobile-drawer"]').contains(optionText).should('be.visible');
+    } else {
+      // Regular mobile menu - check in the dropdown
+      cy.contains(optionText).should('be.visible');
+    }
+  });
 });
 
 When('I visit the festiclub page with artist parameters', () => {

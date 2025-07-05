@@ -123,7 +123,22 @@ When('I navigate to {string}', (pageName: PageName) => {
 When('I click on {string}', (element: string) => {
   // Check if it's a data-testid reference
   if (element.includes('-')) {
-    cy.get(`[data-testid="${element}"]`).click();
+    // Special handling for navigation options that may be in hamburger drawer
+    if (element === 'festiclub-option' || element === 'setlist-option') {
+      cy.get('body').then($body => {
+        // Check if we have a hamburger menu open (very small screens)
+        if ($body.find('[data-testid="mobile-drawer"]').length > 0 && $body.find('[data-testid="mobile-drawer"]').is(':visible')) {
+          // Click the appropriate drawer option
+          const drawerElement = element === 'festiclub-option' ? 'drawer-festiclub' : 'drawer-setlist';
+          cy.get(`[data-testid="${drawerElement}"]`).click();
+        } else {
+          // Regular menu - click the dropdown option
+          cy.get(`[data-testid="${element}"]`).click();
+        }
+      });
+    } else {
+      cy.get(`[data-testid="${element}"]`).click();
+    }
   } else {
     cy.contains(element).click();
   }

@@ -216,6 +216,125 @@ VITE_SPOTIFY_CLIENT_ID=your_client_id
 
 For detailed testing documentation, see [`cypress/README.md`](cypress/README.md).
 
+## Future Enhancements
+
+This section outlines planned improvements and enhancements based on ongoing development and code review findings.
+
+### 🏗️ Architecture & Performance
+
+#### Token Management Improvements
+
+- **Context-based Token Management**: Move token handling from individual components to a global React Context or state management solution (Redux/Zustand)
+  - *Current*: Token passed down through component props
+  - *Target*: Centralized token management with automatic refresh
+  - *Benefits*: Cleaner component APIs, better separation of concerns, easier testing
+
+#### Performance Optimizations
+
+- **Investigate Double Effect Execution**: Research and fix the double `useEffect` execution on page refresh in `QueuePage.tsx`
+  - *Issue*: Performance impact from duplicate API calls
+  - *Target*: Single effect execution per page load
+  - *Benefits*: Reduced API calls, faster page loads
+
+#### Service Worker Implementation
+
+- **Offline Functionality**: Implement service worker for caching and offline playlist management
+  - *Features*: Cache playlists, offline queue management, sync when online
+  - *Benefits*: Better user experience, reduced data usage
+
+### 🚀 User Experience Enhancements
+
+#### Advanced Playlist Features
+
+- **Smart Playlist Merging**: Allow users to combine multiple playlists with AI-driven track ordering
+- **Mood-based Filtering**: Filter generated playlists by musical mood or energy level
+- **Custom Similarity Algorithms**: User-configurable similarity preferences (genre weight, tempo, etc.)
+
+#### Enhanced Audio Controls
+
+- **Crossfade Support**: Implement smooth transitions between tracks
+- **Audio Preview**: Preview tracks before adding to queue
+- **Volume Normalization**: Consistent volume levels across different tracks
+
+#### Social Features
+
+- **Playlist Sharing**: Share generated playlists with other users
+- **Collaborative Queues**: Multiple users contributing to the same queue
+- **Listening Parties**: Synchronized listening sessions
+
+### 🔧 Technical Improvements
+
+#### AI Model Integration
+
+- **Self-hosted Deej-AI**: Deploy own Docker instance of Deej-AI for better control and reliability
+  - *Current*: Dependency on external API
+  - *Target*: Self-hosted model with Docker deployment
+  - *Benefits*: Better uptime, customization possibilities, cost control
+
+#### Data Management
+
+- **Enhanced Caching Strategy**: Implement more sophisticated caching with TTL and invalidation
+- **Playlist Analytics**: Track user preferences and playlist generation patterns
+- **Export/Import**: Allow users to export playlists to various formats
+
+#### Development Experience
+
+- **Enhanced Error Tracking**: Integrate Sentry or similar for production error monitoring
+- **Performance Monitoring**: Add performance metrics and monitoring
+- **A/B Testing Framework**: Infrastructure for testing different algorithm approaches
+
+### 📱 Platform Expansion
+
+#### Progressive Web App Enhancements
+
+- **Native App Feel**: Enhanced PWA capabilities with app-like navigation
+- **Push Notifications**: Notify users when new similar tracks are discovered
+- **Background Sync**: Continue playlist generation even when app is backgrounded
+
+#### Multi-platform Support
+
+- **Desktop App**: Electron-based desktop application
+- **Mobile Apps**: React Native iOS/Android applications
+- **Voice Interface**: Integration with voice assistants
+
+### 🛡️ Security & Compliance
+
+#### Enhanced Security
+
+- **Token Encryption**: Encrypt stored refresh tokens
+- **Rate Limiting**: Implement client-side rate limiting for API calls
+- **Security Headers**: Enhanced security headers and CSP
+
+#### Privacy & Compliance
+
+- **GDPR Compliance**: Enhanced privacy controls and data export
+- **Analytics Opt-out**: User-controlled analytics and tracking
+- **Data Retention Policies**: Configurable data retention settings
+
+### 🎯 Implementation Priority
+
+#### High Priority (Next Release)
+
+1. Context-based token management
+2. Fix double effect execution issue
+3. Self-hosted Deej-AI Docker deployment
+
+#### Medium Priority (Following Releases)
+
+1. Service worker implementation
+2. Enhanced caching strategy
+3. Playlist analytics and user preferences
+
+#### Future Considerations
+
+1. Social features and playlist sharing
+2. Multi-platform native applications
+3. Advanced AI model customizations
+
+---
+
+*This roadmap is living document and will be updated based on user feedback, technical discoveries, and project evolution.*
+
 ## Acknowledgements
 
 - [Spotify Web API](https://developer.spotify.com/documentation/web-api/)

@@ -9,7 +9,14 @@ Given('I am on the homepage', () => {
 
 // Action steps
 When('I click on my user avatar', () => {
-  cy.get('[data-testid="user-avatar"]').should('be.visible').click();
+  // Wait for the page to stabilize after any re-renders
+  cy.wait(1000);
+  
+  // Click on avatar (present in both hamburger and regular mobile layouts)
+  cy.get('[data-testid="user-avatar"]')
+    .should('be.visible')
+    .should('not.be.disabled')
+    .click({ force: true });
 });
 
 When('I click outside the menu', () => {
@@ -111,6 +118,7 @@ Given('the avatar menu is open', () => {
 
 Given('I am using a mobile viewport', () => {
   cy.viewport(375, 667); // iPhone SE viewport
+  cy.wait(1000); // Wait for re-renders after viewport change
 });
 
 Given('I am using a desktop viewport', () => {

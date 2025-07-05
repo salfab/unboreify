@@ -30,7 +30,7 @@ const PlaylistPresenter: React.FC<PlaylistPresenterProps> = ({ name, items, onBa
     }, []);
 
     return (
-        <Grid container>
+        <Grid container data-testid="playlist-presenter">
             <Typography 
                 variant="h4" 
                 gutterBottom
@@ -44,7 +44,7 @@ const PlaylistPresenter: React.FC<PlaylistPresenterProps> = ({ name, items, onBa
                 
                 {onEnhance && (
                     <Tooltip title="Go all CSI and ENHANCE your playlist ! Add similar songs to make it even better 🔍✨">
-                        <IconButton onClick={onEnhance} size="small" sx={{ marginLeft: 1 }}>
+                        <IconButton onClick={onEnhance} size="small" sx={{ marginLeft: 1 }} data-testid="playlist-enhance-button">
                             <AutoFixHighIcon sx={{ color: enhanceMode === 'extend' ? 'primary.main' : 'text.primary' }} />
                         </IconButton>
                     </Tooltip>
