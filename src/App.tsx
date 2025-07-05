@@ -2,7 +2,7 @@
 import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
 import { AppBar, Toolbar, Typography, Button, Container, IconButton, Avatar, Menu, MenuItem, ListItemText, Divider, Drawer, List, ListItem, ListItemIcon } from '@mui/material';
-import { Home as HomeIcon, QueueMusic as QueueIcon, Settings as SettingsIcon, SpeakerGroup as LiveMusicIcon, Menu as MenuIcon } from '@mui/icons-material';
+import { Home as HomeIcon, QueueMusic as QueueIcon, Settings as SettingsIcon, SpeakerGroup as LiveMusicIcon, Menu as MenuIcon, Build as BuildIcon } from '@mui/icons-material';
 import QueuePage from './components/QueuePage';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
@@ -16,6 +16,7 @@ import Settings from './components/Settings';
 import { getPlaylistMultiplier } from './services/localStorageService';
 import FestivalPage from './components/FestivalPage';
 import ConcertSetlistPage from './components/ConcertSetlistPage';
+import PlaylistToolsPage from './components/PlaylistToolsPage';
 
 const App: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -115,6 +116,12 @@ const App: React.FC = () => {
                             </ListItemIcon>
                             <ListItemText primary="Concert Setlist" />
                           </ListItem>
+                          <ListItem component={Link} to="/playlist-tools" data-testid="drawer-playlist-tools">
+                            <ListItemIcon>
+                              <BuildIcon />
+                            </ListItemIcon>
+                            <ListItemText primary="Playlist Tools" />
+                          </ListItem>
                           <ListItem onClick={openSettings} data-testid="drawer-settings">
                             <ListItemIcon>
                               <SettingsIcon />
@@ -132,6 +139,11 @@ const App: React.FC = () => {
                       </IconButton>
                       <IconButton color="inherit" component={Link} to="/queue" data-testid="mobile-queue-button">
                         <QueueIcon data-testid="QueueMusicIcon" />
+                      </IconButton>
+
+                      {/* Playlist Tools Button */}
+                      <IconButton color="inherit" component={Link} to="/playlist-tools" data-testid="mobile-playlist-tools-button">
+                        <BuildIcon data-testid="BuildIcon" />
                       </IconButton>
 
                       {/* Live Music Features Button */}
@@ -214,6 +226,9 @@ const App: React.FC = () => {
                   <Button color="inherit" component={Link} to="/setlist" data-testid="nav-setlist">
                     Setlist
                   </Button>
+                  <Button color="inherit" component={Link} to="/playlist-tools" data-testid="nav-playlist-tools">
+                    Playlist Tools
+                  </Button>
                   <IconButton color="inherit" onClick={handleMenu} data-testid="user-avatar">
                     <Avatar alt={currentUser?.display_name} src={currentUser?.images[0]?.url} />
                   </IconButton>                  <Menu
@@ -263,6 +278,7 @@ const App: React.FC = () => {
             <Route path="/callback" element={<QueuePage />} />
             <Route path="/festiclub" element={<FestivalPage />} />
             <Route path="/setlist" element={<ConcertSetlistPage />} />
+            <Route path="/playlist-tools" element={<PlaylistToolsPage />} />
             <Route path="/" element={<HomePage />} /> {/* Placeholder for Home or other components */}
           </Routes>
         </Container>
