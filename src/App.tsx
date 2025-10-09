@@ -1,29 +1,32 @@
 // App.tsx
 import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
-import { AppBar, Toolbar, Typography, Button, Container, IconButton, Avatar, Menu, MenuItem, ListItemText, Divider } from '@mui/material';
-import { Home as HomeIcon, QueueMusic as QueueIcon, Settings as SettingsIcon, SpeakerGroup as LiveMusicIcon } from '@mui/icons-material';
+import { AppBar, Toolbar, Typography, Button, Container, IconButton, Avatar, Menu, MenuItem, ListItemText, Divider, Drawer, List, ListItem, ListItemIcon } from '@mui/material';
+import { Home as HomeIcon, QueueMusic as QueueIcon, Settings as SettingsIcon, SpeakerGroup as LiveMusicIcon, Menu as MenuIcon, Build as BuildIcon } from '@mui/icons-material';
 import QueuePage from './components/QueuePage';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
 import HomePage from './components/HomePage';
 import Footer from './components/Footer';
 import { ErrorBoundary } from "react-error-boundary";
-import ErrorDisplay from './components/ErrorDisplay';
+import EnhancedErrorFallback from './components/EnhancedErrorFallback';
 import { IAuthContext, AuthContext } from 'react-oauth2-code-pkce';
 import useSpotifyApi from './hooks/useSpotifyApi';
 import Settings from './components/Settings';
 import { getPlaylistMultiplier } from './services/localStorageService';
 import FestivalPage from './components/FestivalPage';
 import ConcertSetlistPage from './components/ConcertSetlistPage';
+import PlaylistToolsPage from './components/PlaylistToolsPage';
 
 const App: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [musicMenuAnchorEl, setMusicMenuAnchorEl] = useState<null | HTMLElement>(null); // State for live music menu
+  const [drawerOpen, setDrawerOpen] = useState(false); // State for hamburger menu
   const open = Boolean(anchorEl);
   const openMusicMenu = Boolean(musicMenuAnchorEl); // State to check if music menu is open
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isVerySmall = useMediaQuery(theme.breakpoints.down(450)); // For hamburger menu threshold
   const { token, logIn, logOut } = useContext<IAuthContext>(AuthContext);
   const { currentUser } = useSpotifyApi();
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -49,10 +52,17 @@ const App: React.FC = () => {
   const closeSettings = useCallback(() => {
     setSettingsOpen(false);
   }, []);
-
   const handleClose = useCallback(() => {
     setAnchorEl(null);
     setMusicMenuAnchorEl(null); // Close live music menu
+  }, []);
+
+  const toggleDrawer = useCallback(() => {
+    setDrawerOpen(!drawerOpen);
+  }, [drawerOpen]);
+
+  const closeDrawer = useCallback(() => {
+    setDrawerOpen(false);
   }, []);
 
   return (    <Router>
@@ -64,46 +74,117 @@ const App: React.FC = () => {
           {token ? (
             <>              {isMobile ? (
                 <>
-                  <IconButton color="inherit" component={Link} to="/" data-testid="nav-home">
-                    <HomeIcon data-testid="HomeIcon" />
-                  </IconButton>
-                  <IconButton color="inherit" component={Link} to="/queue" data-testid="mobile-queue-button">
-                    <QueueIcon data-testid="QueueMusicIcon" />
-                  </IconButton>
+                  {/* Very small screens: Hamburger menu */}
+                  {isVerySmall ? (
+                    <>
+                      <IconButton color="inherit" onClick={toggleDrawer} data-testid="hamburger-menu">
+                        <MenuIcon />
+                      </IconButton>
+                      <IconButton color="inherit" onClick={handleMenu} data-testid="user-avatar">
+                        <Avatar alt={currentUser?.display_name} src={currentUser?.images[0]?.url} />
+                      </IconButton>
+                      
+                      {/* Hamburger Drawer */}
+                      <Drawer
+                        anchor="right"
+                        open={drawerOpen}
+                        onClose={closeDrawer}
+                        data-testid="mobile-drawer"
+                      >
+                        <List sx={{ width: 250 }} onClick={closeDrawer} onKeyDown={closeDrawer}>
+                          <ListItem component={Link} to="/" data-testid="drawer-home">
+                            <ListItemIcon>
+                              <HomeIcon />
+                            </ListItemIcon>
+                            <ListItemText primary="Home" />
+                          </ListItem>
+                          <ListItem component={Link} to="/queue" data-testid="drawer-queue">
+                            <ListItemIcon>
+                              <QueueIcon />
+                            </ListItemIcon>
+                            <ListItemText primary="Queue" />
+                          </ListItem>
+                          <ListItem component={Link} to="/festiclub" data-testid="drawer-festiclub">
+                            <ListItemIcon>
+                              <LiveMusicIcon />
+                            </ListItemIcon>
+                            <ListItemText primary="FestiClub" />
+                          </ListItem>
+                          <ListItem component={Link} to="/setlist" data-testid="drawer-setlist">
+                            <ListItemIcon>
+                              <LiveMusicIcon />
+                            </ListItemIcon>
+                            <ListItemText primary="Concert Setlist" />
+                          </ListItem>
+                          <ListItem component={Link} to="/playlist-tools" data-testid="drawer-playlist-tools">
+                            <ListItemIcon>
+                              <BuildIcon />
+                            </ListItemIcon>
+                            <ListItemText primary="Playlist Tools" />
+                          </ListItem>
+                          <ListItem onClick={openSettings} data-testid="drawer-settings">
+                            <ListItemIcon>
+                              <SettingsIcon />
+                            </ListItemIcon>
+                            <ListItemText primary="Settings" />
+                          </ListItem>
+                        </List>
+                      </Drawer>
+                    </>
+                  ) : (
+                    /* Medium mobile screens: Icon navigation */
+                    <>
+                      <IconButton color="inherit" component={Link} to="/" data-testid="nav-home">
+                        <HomeIcon data-testid="HomeIcon" />
+                      </IconButton>
+                      <IconButton color="inherit" component={Link} to="/queue" data-testid="mobile-queue-button">
+                        <QueueIcon data-testid="QueueMusicIcon" />
+                      </IconButton>
 
-                  {/* Live Music Features Button */}
-                  <IconButton color="inherit" onClick={handleMusicMenu} data-testid="mobile-music-button">
-                    <LiveMusicIcon data-testid="SpeakerGroupIcon" />
-                  </IconButton>                  {/* Live Music Menu */}
-                  <Menu
-                    anchorEl={musicMenuAnchorEl}
-                    open={openMusicMenu}
-                    onClose={handleClose}
-                    disableScrollLock={true}
-                    anchorOrigin={{
-                      vertical: 'top',
-                      horizontal: 'right',
-                    }}
-                    transformOrigin={{
-                      vertical: 'top',
-                      horizontal: 'right',
-                    }}
-                  >
-                    <MenuItem component={Link} to="/festiclub" onClick={handleClose} data-testid="festiclub-option">
-                      FestiClub
-                    </MenuItem>
-                    <MenuItem component={Link} to="/setlist" onClick={handleClose} data-testid="setlist-option">
-                      Concert Setlist
-                    </MenuItem>
-                  </Menu>
+                      {/* Playlist Tools Button */}
+                      <IconButton color="inherit" component={Link} to="/playlist-tools" data-testid="mobile-playlist-tools-button">
+                        <BuildIcon data-testid="BuildIcon" />
+                      </IconButton>
 
-                  <IconButton color="inherit" onClick={openSettings}>
-                    <SettingsIcon />
-                  </IconButton>
+                      {/* Live Music Features Button */}
+                      <IconButton color="inherit" onClick={handleMusicMenu} data-testid="mobile-music-button">
+                        <LiveMusicIcon data-testid="SpeakerGroupIcon" />
+                      </IconButton>
 
-                  <IconButton color="inherit" onClick={handleMenu} data-testid="user-avatar">
-                    <Avatar alt={currentUser?.display_name} src={currentUser?.images[0]?.url} />
-                  </IconButton>                  {/* User Profile Menu */}
+                      {/* Live Music Menu */}
+                      <Menu
+                        anchorEl={musicMenuAnchorEl}
+                        open={openMusicMenu}
+                        onClose={handleClose}
+                        disableScrollLock={true}
+                        anchorOrigin={{
+                          vertical: 'top',
+                          horizontal: 'right',
+                        }}
+                        transformOrigin={{
+                          vertical: 'top',
+                          horizontal: 'right',
+                        }}
+                      >
+                        <MenuItem component={Link} to="/festiclub" onClick={handleClose} data-testid="festiclub-option">
+                          FestiClub
+                        </MenuItem>
+                        <MenuItem component={Link} to="/setlist" onClick={handleClose} data-testid="setlist-option">
+                          Concert Setlist
+                        </MenuItem>
+                      </Menu>
+
+                      <IconButton color="inherit" onClick={openSettings}>
+                        <SettingsIcon />
+                      </IconButton>
+
+                      <IconButton color="inherit" onClick={handleMenu} data-testid="user-avatar">
+                        <Avatar alt={currentUser?.display_name} src={currentUser?.images[0]?.url} />
+                      </IconButton>
+                    </>
+                  )}
+
+                  {/* User Profile Menu for mobile */}
                   <Menu
                     anchorEl={anchorEl}
                     open={open}
@@ -144,6 +225,9 @@ const App: React.FC = () => {
                   </Button>
                   <Button color="inherit" component={Link} to="/setlist" data-testid="nav-setlist">
                     Setlist
+                  </Button>
+                  <Button color="inherit" component={Link} to="/playlist-tools" data-testid="nav-playlist-tools">
+                    Playlist Tools
                   </Button>
                   <IconButton color="inherit" onClick={handleMenu} data-testid="user-avatar">
                     <Avatar alt={currentUser?.display_name} src={currentUser?.images[0]?.url} />
@@ -187,13 +271,14 @@ const App: React.FC = () => {
             </Button>
           )}
         </Toolbar>
-      </AppBar>      <ErrorBoundary FallbackComponent={ErrorDisplay}>
+      </AppBar>      <ErrorBoundary FallbackComponent={EnhancedErrorFallback}>
         <Container data-testid="app-container">
           <Routes>
             <Route path="/queue" element={<QueuePage />} />
             <Route path="/callback" element={<QueuePage />} />
             <Route path="/festiclub" element={<FestivalPage />} />
             <Route path="/setlist" element={<ConcertSetlistPage />} />
+            <Route path="/playlist-tools" element={<PlaylistToolsPage />} />
             <Route path="/" element={<HomePage />} /> {/* Placeholder for Home or other components */}
           </Routes>
         </Container>

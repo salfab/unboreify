@@ -6,6 +6,7 @@ import Button from '@mui/material/Button';
 import Avatar from '@mui/material/Avatar';
 import { useNavigate } from 'react-router-dom';
 import { IAuthContext, AuthContext } from 'react-oauth2-code-pkce';
+import ErrorTrigger from './ErrorTrigger';
 
 // Use public asset URL for logo
 const logoUrl = '/logo.png';
@@ -50,6 +51,9 @@ const HomePage: React.FC = () => {
         >
           {token ? 'Unboreify me' : 'Login with Spotify'}
         </Button>
+        
+        {/* Error Boundary Test Component - For Development/Testing */}
+        {import.meta.env.DEV && <ErrorTrigger />}
       </Box>
     </Container>
   );

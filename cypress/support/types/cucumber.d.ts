@@ -23,7 +23,7 @@ export interface StepDefinitionContext {
 
 // Common step parameter types
 export type AuthState = 'authenticated' | 'unauthenticated';
-export type PageName = 'homepage' | 'festiclub' | 'setlist' | 'queue' | 'settings';
+export type PageName = 'homepage' | 'festiclub' | 'setlist' | 'queue' | 'settings' | 'playlist-tools';
 export type DeviceType = 'desktop' | 'mobile' | 'tablet';
 export type NavigationElement = 'login button' | 'avatar' | 'settings' | 'logout' | 'music icon';
 
