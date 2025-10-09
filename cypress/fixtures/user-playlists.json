@@ -1,0 +1,45 @@
+{
+  "items": [
+    {
+      "id": "test-playlist-1",
+      "name": "Test Playlist 1",
+      "description": "A test playlist for E2E testing",
+      "owner": {
+        "id": "testuser",
+        "display_name": "Test User"
+      },
+      "tracks": {
+        "total": 5
+      },
+      "images": [
+        {
+          "url": "https://via.placeholder.com/300x300.png?text=Playlist+1",
+          "height": 300,
+          "width": 300
+        }
+      ]
+    },
+    {
+      "id": "test-playlist-2", 
+      "name": "Test Playlist 2",
+      "description": "Another test playlist",
+      "owner": {
+        "id": "testuser",
+        "display_name": "Test User"
+      },
+      "tracks": {
+        "total": 8
+      },
+      "images": [
+        {
+          "url": "https://via.placeholder.com/300x300.png?text=Playlist+2",
+          "height": 300,
+          "width": 300
+        }
+      ]
+    }
+  ],
+  "total": 2,
+  "limit": 20,
+  "offset": 0
+}
